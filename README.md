@@ -138,18 +138,18 @@ Todas as variáveis estão documentadas em [`.env.example`](.env.example). Ponto
 
 ## Produção
 
-### Implantação oficial — VPS Hostinger + Supabase (asistente.favisdesign.com.br)
+### Implantação oficial — VPS Hostinger + Supabase (assistente.favisdesign.com.br)
 
 Arquitetura: **Supabase** (banco PostgreSQL + autenticação) e, na **VPS**, `caddy` (HTTPS automático) → `web` → `api`, além de `worker` e `redis` — arquivo [`docker-compose.prod.yml`](docker-compose.prod.yml).
 
 **1. Supabase (painel do projeto)**
 - *Authentication → Sign In / Providers*: **desative "Allow new users to sign up"**. Os usuários são criados apenas pela FAVIS dentro do app.
-- *Authentication → URL Configuration*: Site URL = `https://asistente.favisdesign.com.br`.
+- *Authentication → URL Configuration*: Site URL = `https://assistente.favisdesign.com.br`.
 - *Project Settings → Data API*: **desative a Data API** (o app não usa o acesso direto às tabelas; isso garante que toda escrita passe pelas regras da API).
 - *Connect → Session pooler*: copie a string de conexão (porta 5432) e a senha do banco.
 - *Project Settings → API Keys*: copie a chave publicável (`sb_publishable_…`) e a chave secreta (`sb_secret_…`).
 
-**2. DNS** — no painel onde o domínio `favisdesign.com.br` é gerenciado, crie um registro **A** `asistente` apontando para o IP da VPS.
+**2. DNS** — no painel onde o domínio `favisdesign.com.br` é gerenciado, crie um registro **A** `assistente` apontando para o IP da VPS.
 
 **3. VPS** — no terminal da Hostinger (*VPS → Terminal do navegador*), como root:
 

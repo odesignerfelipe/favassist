@@ -10,7 +10,7 @@ set -euo pipefail
 BRANCH="${BRANCH:-main}"
 APP_DIR="${APP_DIR:-/opt/fav-assist}"
 REPO="https://github.com/odesignerfelipe/favassist.git"
-DEFAULT_DOMAIN="asistente.favisdesign.com.br"
+DEFAULT_DOMAIN="assistente.favisdesign.com.br"
 DEFAULT_SUPABASE_URL="https://mbctlwobwwpgzsusnovg.supabase.co"
 TTY=/dev/tty
 

@@ -13,7 +13,7 @@
 | Identidade visual oficial FAVIS | ✅ Aplicada (cores, ícone FAV, logotipos, ícones do PWA) |
 | Supabase (projeto `mbctlwobwwpgzsusnovg`) | ✅ API compatível com as chaves novas (`sb_publishable_`/`sb_secret_`) e JWKS ES256 — testado contra o projeto real (login e verificação de token). ⏳ Migrações ainda não aplicadas (precisam da string de conexão, digitada na VPS). |
 | Implantação na VPS Hostinger | ✅ Pronta: `docker-compose.prod.yml` (Caddy HTTPS + web + api + worker + redis), `deploy/install.sh`, `deploy/update.sh`, workflow `deploy.yml`. ⏳ Não executada: este ambiente não tem acesso SSH à VPS; o responsável executa o `install.sh` no terminal da Hostinger. |
-| Domínio | `asistente.favisdesign.com.br` — ⏳ registro DNS A pendente |
+| Domínio | `assistente.favisdesign.com.br` — ⏳ registro DNS A pendente |
 | Ajustes de segurança no Supabase | ⏳ Desativar cadastro público (hoje **habilitado**), desativar a Data API, definir Site URL |
 
 ### Funcionalidades concluídas (com comportamento real e persistência)
@@ -85,7 +85,7 @@
 ## Continuidade
 
 - **Última tarefa realizada:** marca oficial aplicada; compatibilidade com o Supabase real; artefatos de implantação na VPS.
-- **Próximo passo recomendado:** acompanhar a primeira implantação (README → "Implantação oficial"), validar o login com Supabase Auth em produção e rodar o E2E contra `https://asistente.favisdesign.com.br`; depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
+- **Próximo passo recomendado:** acompanhar a primeira implantação (README → "Implantação oficial"), validar o login com Supabase Auth em produção e rodar o E2E contra `https://assistente.favisdesign.com.br`; depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
 - **Para retomar:**
 
 ```bash
@@ -102,7 +102,7 @@ pnpm dev
 
 - **Configurações pendentes (precisam do responsável pela FAVIS):**
   - Executar `deploy/install.sh` na VPS (informando a chave secreta e a string de conexão do Supabase).
-  - Registro DNS A `asistente` → IP da VPS.
+  - Registro DNS A `assistente` → IP da VPS.
   - Ajustes de segurança no painel do Supabase (ver README).
   - Chave de API da Anthropic (`AI_API_KEY`).
   - Segredos `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` no GitHub para implantação automática.
