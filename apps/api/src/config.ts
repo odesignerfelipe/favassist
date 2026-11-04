@@ -33,11 +33,10 @@ const envSchema = z
 
     REDIS_URL: optionalString,
 
-    AI_PROVIDER: z.enum(['none', 'anthropic', 'openai_compatible']).default('none'),
+    AI_PROVIDER: z.enum(['none', 'anthropic']).default('none'),
     AI_MODEL: optionalString,
     AI_API_KEY: optionalString,
-    AI_BASE_URL: optionalString,
-    AI_TIMEOUT_MS: z.coerce.number().int().min(5000).default(120_000),
+    AI_TIMEOUT_MS: z.coerce.number().int().min(5000).default(600_000),
 
     MESSAGING_PROVIDER: z.enum(['simulator']).default('simulator'),
     SIMULATOR_FAILURE_RATE: z.coerce.number().min(0).max(1).default(0),
@@ -56,11 +55,8 @@ const envSchema = z
         if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: 'Obrigatório com AUTH_PROVIDER=supabase' });
       }
     }
-    if (env.AI_PROVIDER !== 'none' && (!env.AI_API_KEY || !env.AI_MODEL)) {
-      ctx.addIssue({ code: 'custom', path: ['AI_API_KEY'], message: 'AI_API_KEY e AI_MODEL são obrigatórios' });
-    }
-    if (env.AI_PROVIDER === 'openai_compatible' && !env.AI_BASE_URL) {
-      ctx.addIssue({ code: 'custom', path: ['AI_BASE_URL'], message: 'Obrigatório com openai_compatible' });
+    if (env.AI_PROVIDER !== 'none' && !env.AI_API_KEY) {
+      ctx.addIssue({ code: 'custom', path: ['AI_API_KEY'], message: 'Obrigatório quando AI_PROVIDER não é none' });
     }
   });
 
