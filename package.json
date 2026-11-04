@@ -1,0 +1,21 @@
+{
+  "name": "fav-assist",
+  "private": true,
+  "version": "0.1.0",
+  "description": "FAV Assist — plataforma de inteligência estratégica de marketing | by FAVIS Design Studio",
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @fav/api --filter @fav/web dev",
+    "dev:api": "pnpm --filter @fav/api dev",
+    "dev:web": "pnpm --filter @fav/web dev",
+    "dev:worker": "pnpm --filter @fav/api dev:worker",
+    "db:migrate": "pnpm --filter @fav/api db:migrate",
+    "db:seed:admin": "pnpm --filter @fav/api seed:admin",
+    "db:seed:demo": "pnpm --filter @fav/api seed:demo",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "check": "pnpm typecheck && pnpm test"
+  }
+}
