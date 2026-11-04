@@ -22,7 +22,8 @@ Ao concluir uma etapa:
 - Permissões: matriz única em `packages/shared/src/permissions.ts`. Máquina de estados das atividades em `packages/shared/src/activity-status.ts` **espelhada** em SQL (há teste comparando).
 - Mudança de banco = nova migração em `supabase/migrations/` (nunca editar migração já aplicada).
 - Nunca comitar `.env` ou credenciais.
-- Identidade visual provisória: tokens em `apps/web/src/styles/brand.css`, arquivos em `apps/web/public/brand/`.
+- Identidade visual oficial FAVIS (marrom `#2D1500`, laranja `#FF8801`): tokens em `apps/web/src/styles/brand.css`, arquivos em `apps/web/public/brand/`. Laranja só em preenchimentos; texto usa `accent-ink`.
+- Produção: Supabase (banco + Auth) + VPS Hostinger (`docker-compose.prod.yml`, `deploy/`), domínio `asistente.favisdesign.com.br`.
 
 ## Comandos
 

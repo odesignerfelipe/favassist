@@ -68,7 +68,13 @@ const envSchema = z
 export type Config = z.infer<typeof envSchema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = envSchema.safeParse(env);
+  // Nomes das chaves novas do Supabase (publishable/secret) como alternativa aos legados (anon/service_role)
+  const merged = {
+    ...env,
+    SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY || env.SUPABASE_PUBLISHABLE_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY,
+  };
+  const parsed = envSchema.safeParse(merged);
   if (!parsed.success) {
     const details = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
     throw new Error(`Configuração inválida:\n${details}\nConsulte .env.example`);

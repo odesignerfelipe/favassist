@@ -5,7 +5,16 @@
 
 ## Estado atual
 
-**Etapa:** 1 — Primeira versão funcional → **Marco 1 concluído e validado** (API, banco e navegador).
+**Etapa:** 2 — Operação real (em andamento). Etapa 1 concluída: **Marco 1 validado** (API, banco e navegador).
+
+### Etapa 2 — andamento
+| Item | Situação |
+|---|---|
+| Identidade visual oficial FAVIS | ✅ Aplicada (cores, ícone FAV, logotipos, ícones do PWA) |
+| Supabase (projeto `mbctlwobwwpgzsusnovg`) | ✅ API compatível com as chaves novas (`sb_publishable_`/`sb_secret_`) e JWKS ES256 — testado contra o projeto real (login e verificação de token). ⏳ Migrações ainda não aplicadas (precisam da string de conexão, digitada na VPS). |
+| Implantação na VPS Hostinger | ✅ Pronta: `docker-compose.prod.yml` (Caddy HTTPS + web + api + worker + redis), `deploy/install.sh`, `deploy/update.sh`, workflow `deploy.yml`. ⏳ Não executada: este ambiente não tem acesso SSH à VPS; o responsável executa o `install.sh` no terminal da Hostinger. |
+| Domínio | `asistente.favisdesign.com.br` — ⏳ registro DNS A pendente |
+| Ajustes de segurança no Supabase | ⏳ Desativar cadastro público (hoje **habilitado**), desativar a Data API, definir Site URL |
 
 ### Funcionalidades concluídas (com comportamento real e persistência)
 
@@ -59,12 +68,13 @@
 | `apps/api` — 16 testes de banco (isolamento RLS, papéis, auditoria, triggers, SQL ≡ TS) | ✅ |
 | `apps/api` — 17 testes de integração HTTP do Marco 1 | ✅ |
 | `apps/api` — 2 testes de IA (fila → validação → aplicação) e despacho automático do WhatsApp | ✅ |
+| `apps/api` — 3 testes do provedor Supabase (chaves novas/legadas, configuração) | ✅ |
 | E2E no navegador (`e2e/milestone.e2e.mjs`) — 9 etapas do Marco 1 | ✅ |
 | Build de produção (API tsup, web Vite + PWA) | ✅ |
 | Imagem Docker `api`: migração em banco novo, `/api/health`, worker | ✅ |
 | Imagem Docker `web` | ⚠️ não validada (Docker Hub 429) |
 
-**Total: 61 testes automatizados + E2E, todos passando.**
+**Total: 64 testes automatizados + E2E, todos passando.**
 
 ### Limitações conhecidas
 - Sem chave de IA, a geração fica desativada (a interface informa claramente). Nenhuma geração é simulada.
@@ -74,8 +84,8 @@
 
 ## Continuidade
 
-- **Última tarefa realizada:** documentação final, Docker e CI da primeira entrega.
-- **Próximo passo recomendado:** Etapa 2 (ROADMAP.md) — criar o projeto Supabase de produção, configurar a chave da IA e calibrar os prompts com 2–3 clientes reais; em seguida, upload de evidências (Supabase Storage) e notificações no app.
+- **Última tarefa realizada:** marca oficial aplicada; compatibilidade com o Supabase real; artefatos de implantação na VPS.
+- **Próximo passo recomendado:** acompanhar a primeira implantação (README → "Implantação oficial"), validar o login com Supabase Auth em produção e rodar o E2E contra `https://asistente.favisdesign.com.br`; depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
 - **Para retomar:**
 
 ```bash
@@ -91,8 +101,9 @@ pnpm dev
 ```
 
 - **Configurações pendentes (precisam do responsável pela FAVIS):**
-  - Arquivos oficiais da marca (logotipo, cores, tipografia).
-  - Projeto Supabase (URL, anon key, service role key) para produção.
+  - Executar `deploy/install.sh` na VPS (informando a chave secreta e a string de conexão do Supabase).
+  - Registro DNS A `asistente` → IP da VPS.
+  - Ajustes de segurança no painel do Supabase (ver README).
   - Chave de API da Anthropic (`AI_API_KEY`).
-  - VPS/domínio para implantação.
+  - Segredos `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` no GitHub para implantação automática.
   - Decisão sobre a integração do WhatsApp (solução não oficial × API oficial do WhatsApp Business) — ver riscos no ROADMAP.

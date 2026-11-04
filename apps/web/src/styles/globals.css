@@ -13,6 +13,7 @@
   --color-brand-foreground: rgb(var(--brand-foreground));
   --color-accent: rgb(var(--accent));
   --color-accent-soft: rgb(var(--accent-soft));
+  --color-accent-ink: rgb(var(--accent-ink));
   --color-success: rgb(var(--success));
   --color-success-soft: rgb(var(--success-soft));
   --color-warning: rgb(var(--warning));

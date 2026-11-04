@@ -1,0 +1,71 @@
+# FAV Assist — PRODUÇÃO (VPS) com Supabase como banco + autenticação.
+# Serviços: caddy (HTTPS automático) → web (nginx + PWA) → api ; worker ; redis ; migrate (one-shot).
+# Uso na VPS: deploy/install.sh (primeira vez) e deploy/update.sh (atualizações).
+
+x-app: &app
+  build: { context: ., target: api }
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    NODE_ENV: production
+    REDIS_URL: redis://redis:6379
+    FAV_REPO_ROOT: /app
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+
+  migrate:
+    <<: *app
+    restart: 'no'
+    command: ['node', 'dist/db/migrate.js']
+
+  api:
+    <<: *app
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    <<: *app
+    command: ['node', 'dist/worker.js']
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    build: { context: ., target: web }
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN:?Defina DOMAIN no .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  redisdata:
+  caddy_data:
+  caddy_config:

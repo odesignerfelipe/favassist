@@ -266,7 +266,7 @@ export function ActivityDetailSheet({
                       <Link2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">
                         {e.url ? (
-                          <a href={e.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 break-all text-accent hover:underline">
+                          <a href={e.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 break-all text-accent-ink hover:underline">
                             {e.url} <ExternalLink className="size-3" />
                           </a>
                         ) : (

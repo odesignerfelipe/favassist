@@ -91,7 +91,7 @@ export default function RankingPage() {
             {q.data.achievements.map((a) => (
               <div key={a.code} className="rounded-lg border p-3">
                 <p className="flex items-center gap-1.5 font-medium">
-                  <Award className="size-4 text-accent" /> {a.name}
+                  <Award className="size-4 text-accent-ink" /> {a.name}
                 </p>
                 <p className="mt-0.5 text-sm text-muted-foreground">{a.description}</p>
               </div>

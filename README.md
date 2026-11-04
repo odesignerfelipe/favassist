@@ -138,6 +138,29 @@ Todas as variáveis estão documentadas em [`.env.example`](.env.example). Ponto
 
 ## Produção
 
+### Implantação oficial — VPS Hostinger + Supabase (asistente.favisdesign.com.br)
+
+Arquitetura: **Supabase** (banco PostgreSQL + autenticação) e, na **VPS**, `caddy` (HTTPS automático) → `web` → `api`, além de `worker` e `redis` — arquivo [`docker-compose.prod.yml`](docker-compose.prod.yml).
+
+**1. Supabase (painel do projeto)**
+- *Authentication → Sign In / Providers*: **desative "Allow new users to sign up"**. Os usuários são criados apenas pela FAVIS dentro do app.
+- *Authentication → URL Configuration*: Site URL = `https://asistente.favisdesign.com.br`.
+- *Project Settings → Data API*: **desative a Data API** (o app não usa o acesso direto às tabelas; isso garante que toda escrita passe pelas regras da API).
+- *Connect → Session pooler*: copie a string de conexão (porta 5432) e a senha do banco.
+- *Project Settings → API Keys*: copie a chave publicável (`sb_publishable_…`) e a chave secreta (`sb_secret_…`).
+
+**2. DNS** — no painel onde o domínio `favisdesign.com.br` é gerenciado, crie um registro **A** `asistente` apontando para o IP da VPS.
+
+**3. VPS** — no terminal da Hostinger (*VPS → Terminal do navegador*), como root:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/odesignerfelipe/favassist/main/deploy/install.sh | bash
+```
+
+O script instala o Docker, baixa o código, pede as chaves (digitadas só na VPS, guardadas em `/opt/fav-assist/.env` com permissão 600), aplica as migrações no Supabase, sobe os serviços e cria o primeiro Administrador FAVIS. O HTTPS é emitido automaticamente quando o DNS estiver propagado.
+
+**4. Atualizações** — manualmente na VPS com `/opt/fav-assist/deploy/update.sh`, ou automaticamente a cada push no `main` pelo workflow [`deploy.yml`](.github/workflows/deploy.yml) (configure os segredos `VPS_HOST`, `VPS_USER` e `VPS_SSH_KEY` em *Settings → Secrets and variables → Actions* do GitHub).
+
 ### Opção A — Docker Compose em VPS Linux
 
 ```bash
@@ -194,4 +217,4 @@ docker compose exec -T postgres pg_dump -U fav -Fc fav_assist > /backups/fav_ass
 
 ## Identidade visual
 
-A identidade atual é **provisória e neutra**. Para aplicar a marca oficial da FAVIS, veja [`apps/web/public/brand/README.md`](apps/web/public/brand/README.md): basta trocar os arquivos em `public/brand/` e os tokens em `apps/web/src/styles/brand.css`.
+Marca oficial FAVIS Design Studio aplicada: marrom `#2D1500`, laranja `#FF8801`, ícone FAV e logotipos em [`apps/web/public/brand/`](apps/web/public/brand/README.md); tokens em `apps/web/src/styles/brand.css`.

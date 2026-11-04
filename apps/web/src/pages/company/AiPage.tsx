@@ -113,7 +113,7 @@ function ReviewDialog({ companyId, generationId, onClose }: { companyId: string;
                         </p>
                         <p className="mt-1.5 text-sm">{it.objective}</p>
                         <details className="mt-1.5 text-sm">
-                          <summary className="cursor-pointer text-accent">Ver roteiro e orientações</summary>
+                          <summary className="cursor-pointer text-accent-ink">Ver roteiro e orientações</summary>
                           <div className="mt-2 space-y-2 whitespace-pre-wrap text-foreground/90">
                             <p>{it.script}</p>
                             {!!it.talking_points.length && <ul className="list-disc pl-5">{it.talking_points.map((t, j) => <li key={j}>{t}</li>)}</ul>}
@@ -191,7 +191,7 @@ export default function AiPage() {
         <CardHeader>
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="size-4 text-accent" /> Novo planejamento
+              <Sparkles className="size-4 text-accent-ink" /> Novo planejamento
             </CardTitle>
             <CardDescription>A IA usa o diagnóstico, campanhas ativas e o histórico da empresa.</CardDescription>
           </div>

@@ -25,7 +25,7 @@ export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDi
 // ---------------- Badge ----------------
 const badgeTones = {
   neutral: 'bg-surface-muted text-foreground/80 border-border',
-  accent: 'bg-accent-soft text-accent border-accent/20',
+  accent: 'bg-accent-soft text-accent-ink border-accent/20',
   success: 'bg-success-soft text-success border-success/20',
   warning: 'bg-warning-soft text-warning border-warning/20',
   danger: 'bg-danger-soft text-danger border-danger/20',

@@ -31,6 +31,7 @@ export interface AuthProvider {
   verifyPassword(userId: string, password: string): Promise<boolean>;
 }
 
+export const isLegacyJwtKey = (key: string) => key.startsWith('eyJ');
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
 const invalidCredentials = () => new AppError(401, 'credenciais_invalidas', 'E-mail ou senha incorretos');
 
@@ -211,13 +212,14 @@ export class SupabaseAuthProvider implements AuthProvider {
 
   private async call(path: string, init: { method: string; body?: unknown; bearer?: string; admin?: boolean }) {
     const key = init.admin ? this.cfg.SUPABASE_SERVICE_ROLE_KEY! : this.cfg.SUPABASE_ANON_KEY!;
+    const headers: Record<string, string> = { apikey: key, 'content-type': 'application/json' };
+    // Chaves novas (sb_publishable_/sb_secret_) não são JWT: vão só no cabeçalho apikey.
+    // Chaves legadas (JWT anon/service_role) também são aceitas como Bearer.
+    if (init.bearer) headers.authorization = `Bearer ${init.bearer}`;
+    else if (isLegacyJwtKey(key)) headers.authorization = `Bearer ${key}`;
     const res = await this.fetchImpl(`${this.url}/auth/v1${path}`, {
       method: init.method,
-      headers: {
-        apikey: key,
-        'content-type': 'application/json',
-        authorization: `Bearer ${init.bearer ?? key}`,
-      },
+      headers,
       body: init.body ? JSON.stringify(init.body) : undefined,
     });
     const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;

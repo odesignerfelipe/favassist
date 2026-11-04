@@ -10,20 +10,20 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['brand/icon.svg'],
+      includeAssets: ['brand/icon-48.png', 'brand/icon-180.png'],
       manifest: {
         name: 'FAV Assist',
         short_name: 'FAV Assist',
         description: 'Planejamento estratégico de marketing — by FAVIS Design Studio',
         lang: 'pt-BR',
-        theme_color: '#18181b',
-        background_color: '#fafaf9',
+        theme_color: '#2d1500',
+        background_color: '#2d1500',
         display: 'standalone',
         start_url: '/',
         icons: [
           { src: '/brand/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/brand/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/brand/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/brand/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

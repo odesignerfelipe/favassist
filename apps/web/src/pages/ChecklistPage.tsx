@@ -47,7 +47,7 @@ function TaskItem({ a, onOpen, showDate, multiCompany }: { a: Activity; onOpen: 
             <PillarTag pillar={a.pillar} />
           </div>
           {a.callToAction && !done && <p className="mt-2 text-sm">➜ {a.callToAction}</p>}
-          <span className="mt-2 inline-block text-sm text-accent">Ver roteiro e orientações</span>
+          <span className="mt-2 inline-block text-sm text-accent-ink">Ver roteiro e orientações</span>
         </button>
       </Card>
     </li>

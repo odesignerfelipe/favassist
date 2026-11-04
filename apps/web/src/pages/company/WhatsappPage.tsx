@@ -77,7 +77,7 @@ function GroupDialog({ companyId, group, open, onOpenChange }: { companyId: stri
                     type="button"
                     aria-pressed={days.includes(d)}
                     onClick={() => setDays((s) => (s.includes(d) ? s.filter((x) => x !== d) : [...s, d].sort()))}
-                    className={cn('rounded-md border px-3 py-1.5 text-sm', days.includes(d) ? 'border-accent bg-accent-soft text-accent' : 'text-muted-foreground')}
+                    className={cn('rounded-md border px-3 py-1.5 text-sm', days.includes(d) ? 'border-accent bg-accent-soft text-accent-ink' : 'text-muted-foreground')}
                   >
                     {WEEKDAY_LABELS[d]}
                   </button>

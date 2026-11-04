@@ -1,26 +1,28 @@
 /*
  * =============================================================================
  * TOKENS DE MARCA — FAV Assist by FAVIS
- * Identidade PROVISÓRIA e neutra. Ao receber o manual da marca FAVIS,
- * altere apenas este arquivo (cores, raio, fonte) e os arquivos em public/brand.
+ * Identidade oficial FAVIS Design Studio: marrom #2D1500 + laranja #FF8801.
+ * Arquivos de logotipo em public/brand/ (ver README.md da pasta).
  * =============================================================================
  */
 :root {
-  /* Cor de marca (ação principal, destaques). Provisória: grafite. */
-  --brand: 24 24 27;
-  --brand-foreground: 250 250 249;
-  /* Acento discreto para estados ativos/foco. Provisório: azul petróleo sóbrio. */
-  --accent: 15 118 110;
-  --accent-soft: 240 253 250;
+  /* Marrom FAVIS — ação principal, superfícies de marca */
+  --brand: 45 21 0;
+  --brand-foreground: 247 247 247;
+  /* Laranja FAVIS — preenchimentos (progresso, seleção, destaques).
+     Para TEXTO use --accent-ink (o laranja puro não tem contraste suficiente sobre branco). */
+  --accent: 255 136 1;
+  --accent-ink: 168 84 0;
+  --accent-soft: 255 244 230;
 
-  /* Superfícies e texto */
-  --background: 250 250 249;
+  /* Superfícies e texto (neutros quentes, derivados do marrom) */
+  --background: 250 249 247;
   --surface: 255 255 255;
-  --surface-muted: 245 245 244;
-  --foreground: 24 24 27;
-  --muted-foreground: 113 113 122;
-  --border: 231 229 228;
-  --ring: 15 118 110;
+  --surface-muted: 245 242 239;
+  --foreground: 33 22 10;
+  --muted-foreground: 112 100 90;
+  --border: 233 227 221;
+  --ring: 255 136 1;
 
   /* Estados */
   --success: 21 128 61;
