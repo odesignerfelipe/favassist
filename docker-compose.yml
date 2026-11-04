@@ -1,0 +1,87 @@
+# FAV Assist — ambiente completo (Postgres + Redis + API + worker + web)
+# Uso: cp .env.example .env  (ajuste os segredos)  →  docker compose up -d --build
+# Acesse http://localhost:8080 e crie o primeiro admin:
+#   docker compose run --rm -e SEED_ADMIN_EMAIL=... -e SEED_ADMIN_PASSWORD=... api node dist/scripts/seed-admin.js
+
+x-api-env: &api-env
+  NODE_ENV: production
+  APP_URL: ${PUBLIC_URL:-http://localhost:8080}
+  DATABASE_URL: postgres://${POSTGRES_USER:-fav}:${POSTGRES_PASSWORD:-troque-esta-senha}@postgres:5432/${POSTGRES_DB:-fav_assist}
+  REDIS_URL: redis://redis:6379
+  AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+  AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?Defina AUTH_JWT_SECRET no .env}
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  SUPABASE_URL: ${SUPABASE_URL:-}
+  SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+  SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+  AI_PROVIDER: ${AI_PROVIDER:-none}
+  AI_MODEL: ${AI_MODEL:-}
+  AI_API_KEY: ${AI_API_KEY:-}
+  MESSAGING_PROVIDER: simulator
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fav}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-troque-esta-senha}
+      POSTGRES_DB: ${POSTGRES_DB:-fav_assist}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-fav} -d ${POSTGRES_DB:-fav_assist}']
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+
+  migrate:
+    build: { context: ., target: api }
+    environment: *api-env
+    command: ['node', 'dist/db/migrate.js']
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: 'no'
+
+  api:
+    build: { context: ., target: api }
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: { context: ., target: api }
+    restart: unless-stopped
+    environment: *api-env
+    command: ['node', 'dist/worker.js']
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    build: { context: ., target: web }
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  redisdata:

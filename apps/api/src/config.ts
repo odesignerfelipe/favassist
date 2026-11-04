@@ -25,6 +25,11 @@ const envSchema = z
     AUTH_JWT_SECRET: optionalString,
     AUTH_ACCESS_TTL_SECONDS: z.coerce.number().int().min(60).default(900),
     AUTH_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).default(14),
+    /** Cookie de sessão com flag Secure. Padrão: true em produção. Use false só sem HTTPS (ex.: teste local). */
+    COOKIE_SECURE: z
+      .enum(['true', 'false', ''])
+      .optional()
+      .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
 
     SUPABASE_URL: optionalString,
     SUPABASE_ANON_KEY: optionalString,

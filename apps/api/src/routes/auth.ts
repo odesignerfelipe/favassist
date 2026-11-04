@@ -12,7 +12,7 @@ function setRefreshCookie(req: FastifyRequest, reply: FastifyReply, token: strin
   reply.setCookie(REFRESH_COOKIE, token, {
     httpOnly: true,
     sameSite: 'strict',
-    secure: req.server.deps.cfg.NODE_ENV === 'production',
+    secure: req.server.deps.cfg.COOKIE_SECURE ?? req.server.deps.cfg.NODE_ENV === 'production',
     path: '/api/auth',
     maxAge: req.server.deps.cfg.AUTH_REFRESH_TTL_DAYS * 86_400,
   });
