@@ -1,0 +1,66 @@
+# FAV Assist — implantação no EASYPANEL (serviço "Compose" a partir do GitHub).
+# - Domínio e HTTPS: configurados no Easypanel → Domains → serviço "web", porta 80.
+# - Variáveis: Easypanel → Environment (ative "Create .env file"). Modelo em deploy/easypanel.env.example.
+# - Sem portas publicadas e sem container_name: convive com outros projetos da mesma VPS.
+# - Banco e autenticação: Supabase (externo).
+
+x-app: &app
+  build: { context: ., target: api }
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    NODE_ENV: production
+    REDIS_URL: redis://fav-assist-redis:6379
+    FAV_REPO_ROOT: /app
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    networks:
+      default:
+        aliases: [fav-assist-redis]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+
+  # Executa a cada implantação: aplica migrações pendentes e, se SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD
+  # estiverem definidos, cria (ou promove) o Administrador FAVIS. Depois pode apagar a senha do Environment.
+  migrate:
+    <<: *app
+    restart: 'no'
+    command:
+      - sh
+      - -c
+      - node dist/db/migrate.js && if [ -n "$$SEED_ADMIN_EMAIL" ] && [ -n "$$SEED_ADMIN_PASSWORD" ]; then node dist/scripts/seed-admin.js; fi
+
+  api:
+    <<: *app
+    networks:
+      default:
+        aliases: [fav-assist-api]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    <<: *app
+    command: ['node', 'dist/worker.js']
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  web:
+    build: { context: ., target: web }
+    restart: unless-stopped
+    depends_on:
+      - api
+
+volumes:
+  redisdata:

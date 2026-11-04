@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# FAV Assist — instalação na VPS (Ubuntu 22.04/24.04, executar como root).
+# FAV Assist — instalação em VPS DEDICADA (Ubuntu 22.04/24.04, executar como root).
+# ATENÇÃO: se a VPS já usa Easypanel/Coolify/outro proxy nas portas 80/443, NÃO use este script —
+# implante pelo painel com docker-compose.easypanel.yml (ver README → "Implantação oficial").
 #   curl -fsSL https://raw.githubusercontent.com/odesignerfelipe/favassist/main/deploy/install.sh | bash
 # Variáveis opcionais: BRANCH (padrão main), APP_DIR (padrão /opt/fav-assist), DOMAIN.
 # Os segredos são digitados aqui, na VPS — nunca são enviados ao GitHub.
@@ -19,6 +21,17 @@ ask() { local var="$1" prompt="$2" def="${3:-}" val; read -r -p "$prompt${def:+ 
 ask_secret() { local var="$1" prompt="$2" val; read -r -s -p "$prompt: " val < "$TTY"; echo; printf -v "$var" '%s' "$val"; }
 
 [ "$(id -u)" -eq 0 ] || { echo "Execute como root (sudo -i)."; exit 1; }
+
+# Trava de segurança: não interferir em painéis/sites já existentes na VPS
+if command -v ss >/dev/null && ss -ltnH '( sport = :80 or sport = :443 )' | grep -q .; then
+  echo "As portas 80/443 já estão em uso nesta VPS (ex.: Easypanel). Instalação interrompida — nada foi alterado."
+  echo "Implante pelo painel usando docker-compose.easypanel.yml (ver README)."
+  exit 1
+fi
+if command -v docker >/dev/null && docker ps --format '{{.Names}}' 2>/dev/null | grep -qi easypanel; then
+  echo "Easypanel detectado. Instalação interrompida — use docker-compose.easypanel.yml pelo painel (ver README)."
+  exit 1
+fi
 
 say "Instalando dependências (git, Docker)…"
 apt-get update -qq

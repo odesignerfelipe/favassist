@@ -59,6 +59,9 @@ services:
     build: { context: ., target: api }
     restart: unless-stopped
     environment: *api-env
+    networks:
+      default:
+        aliases: [fav-assist-api]
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }

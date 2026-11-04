@@ -12,7 +12,7 @@
 |---|---|
 | Identidade visual oficial FAVIS | ✅ Aplicada (cores, ícone FAV, logotipos, ícones do PWA) |
 | Supabase (projeto `mbctlwobwwpgzsusnovg`) | ✅ API compatível com as chaves novas (`sb_publishable_`/`sb_secret_`) e JWKS ES256 — testado contra o projeto real (login e verificação de token). ⏳ Migrações ainda não aplicadas (precisam da string de conexão, digitada na VPS). |
-| Implantação na VPS Hostinger | ✅ Pronta: `docker-compose.prod.yml` (Caddy HTTPS + web + api + worker + redis), `deploy/install.sh`, `deploy/update.sh`, workflow `deploy.yml`. ⏳ Não executada: este ambiente não tem acesso SSH à VPS; o responsável executa o `install.sh` no terminal da Hostinger. |
+| Implantação na VPS Hostinger | A VPS já roda **Easypanel** (com `gestao.caicosabores.com`): implantação via serviço Compose do Easypanel com `docker-compose.easypanel.yml` (sem portas publicadas, aliases internos exclusivos, migração + criação do admin automáticas). ✅ Validado localmente: pilha completa (imagens api e web, nginx, redis, worker), E2E do Marco 1 pelo nginx e reimplantação idempotente. ⏳ Configuração no painel pelo responsável (README → "Implantação oficial"). `install.sh` (VPS dedicada) agora aborta se detectar Easypanel ou portas 80/443 ocupadas. |
 | Domínio | `assistente.favisdesign.com.br` — ⏳ registro DNS A pendente |
 | Ajustes de segurança no Supabase | ⏳ Desativar cadastro público (hoje **habilitado**), desativar a Data API, definir Site URL |
 
@@ -41,7 +41,6 @@
 - **IA:** o provedor Anthropic está implementado e com tipos verificados, mas **não foi chamado de verdade** (não há chave de API nesta sessão). O fluxo completo foi testado com um provedor roteirizado de testes.
 - **Evidências:** apenas links e textos. Upload de imagem/vídeo depende do Supabase Storage (Etapa 2).
 - **Gamificação:** ranking de empresas existe na API, sem tela própria ainda.
-- **Imagem Docker `web`:** não validada nesta sessão (limite de requisições do Docker Hub, HTTP 429). A imagem `api` foi construída e validada (migração + API + worker).
 
 ### Pendente (próximas etapas — ver ROADMAP.md)
 - Recuperação de senha/convite por e-mail; notificações no app e Web Push.
@@ -72,7 +71,7 @@
 | E2E no navegador (`e2e/milestone.e2e.mjs`) — 9 etapas do Marco 1 | ✅ |
 | Build de produção (API tsup, web Vite + PWA) | ✅ |
 | Imagem Docker `api`: migração em banco novo, `/api/health`, worker | ✅ |
-| Imagem Docker `web` | ⚠️ não validada (Docker Hub 429) |
+| Imagem Docker `web` + pilha Easypanel completa (E2E pelo nginx) | ✅ |
 
 **Total: 64 testes automatizados + E2E, todos passando.**
 
@@ -101,7 +100,7 @@ pnpm dev
 ```
 
 - **Configurações pendentes (precisam do responsável pela FAVIS):**
-  - Executar `deploy/install.sh` na VPS (informando a chave secreta e a string de conexão do Supabase).
+  - Criar o serviço Compose no Easypanel e preencher o Environment (chave secreta e string de conexão do Supabase).
   - Registro DNS A `assistente` → IP da VPS.
   - Ajustes de segurança no painel do Supabase (ver README).
   - Chave de API da Anthropic (`AI_API_KEY`).

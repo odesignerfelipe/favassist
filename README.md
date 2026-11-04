@@ -138,28 +138,29 @@ Todas as variáveis estão documentadas em [`.env.example`](.env.example). Ponto
 
 ## Produção
 
-### Implantação oficial — VPS Hostinger + Supabase (assistente.favisdesign.com.br)
+### Implantação oficial — Easypanel (VPS Hostinger) + Supabase
 
-Arquitetura: **Supabase** (banco PostgreSQL + autenticação) e, na **VPS**, `caddy` (HTTPS automático) → `web` → `api`, além de `worker` e `redis` — arquivo [`docker-compose.prod.yml`](docker-compose.prod.yml).
+Produção em `https://assistente.favisdesign.com.br`. A VPS já roda o Easypanel (com outros sites), então o FAV Assist é implantado **como um serviço Compose do Easypanel**, que cuida do domínio e do HTTPS. Arquivo: [`docker-compose.easypanel.yml`](docker-compose.easypanel.yml) — sem portas publicadas e com nomes internos exclusivos, para não interferir nos demais projetos.
 
 **1. Supabase (painel do projeto)**
-- *Authentication → Sign In / Providers*: **desative "Allow new users to sign up"**. Os usuários são criados apenas pela FAVIS dentro do app.
+- *Authentication → Sign In / Providers*: **desative "Allow new users to sign up"** (usuários são criados só pela FAVIS no app).
 - *Authentication → URL Configuration*: Site URL = `https://assistente.favisdesign.com.br`.
-- *Project Settings → Data API*: **desative a Data API** (o app não usa o acesso direto às tabelas; isso garante que toda escrita passe pelas regras da API).
+- *Project Settings → Data API*: **desative a Data API** (toda escrita passa pelas regras da API do FAV Assist).
 - *Connect → Session pooler*: copie a string de conexão (porta 5432) e a senha do banco.
-- *Project Settings → API Keys*: copie a chave publicável (`sb_publishable_…`) e a chave secreta (`sb_secret_…`).
+- *Project Settings → API Keys*: copie a chave secreta (`sb_secret_…`).
 
-**2. DNS** — no painel onde o domínio `favisdesign.com.br` é gerenciado, crie um registro **A** `assistente` apontando para o IP da VPS.
+**2. DNS** — registro **A** `assistente` → IP da VPS (no painel onde `favisdesign.com.br` é gerenciado).
 
-**3. VPS** — no terminal da Hostinger (*VPS → Terminal do navegador*), como root:
+**3. Easypanel**
+1. Crie um projeto (ex.: `fav-assist`) → **+ Service → Compose**.
+2. *Source*: GitHub → repositório `odesignerfelipe/favassist`, branch `main` (ou `feat/primeira-entrega` até o merge), *Build path* `/`, *Compose file* `docker-compose.easypanel.yml`.
+3. *Environment*: cole o conteúdo de [`deploy/easypanel.env.example`](deploy/easypanel.env.example), preencha os valores entre `< >` e **ative "Create .env file"**.
+4. *Domains*: adicione `assistente.favisdesign.com.br` → serviço **`web`**, porta **80**, HTTPS ativado.
+5. **Deploy.** O serviço `migrate` aplica as migrações no Supabase e cria o Administrador FAVIS (variáveis `SEED_ADMIN_*`). Após o primeiro login, apague `SEED_ADMIN_PASSWORD` do Environment.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/odesignerfelipe/favassist/main/deploy/install.sh | bash
-```
+**4. Atualizações** — novo deploy pelo Easypanel (ou ative o deploy automático/webhook do serviço para cada push na branch).
 
-O script instala o Docker, baixa o código, pede as chaves (digitadas só na VPS, guardadas em `/opt/fav-assist/.env` com permissão 600), aplica as migrações no Supabase, sobe os serviços e cria o primeiro Administrador FAVIS. O HTTPS é emitido automaticamente quando o DNS estiver propagado.
-
-**4. Atualizações** — manualmente na VPS com `/opt/fav-assist/deploy/update.sh`, ou automaticamente a cada push no `main` pelo workflow [`deploy.yml`](.github/workflows/deploy.yml) (configure os segredos `VPS_HOST`, `VPS_USER` e `VPS_SSH_KEY` em *Settings → Secrets and variables → Actions* do GitHub).
+> `deploy/install.sh` + `docker-compose.prod.yml` são a alternativa para uma **VPS dedicada** sem painel (Caddy com HTTPS próprio). O script se recusa a rodar se encontrar Easypanel ou as portas 80/443 ocupadas.
 
 ### Opção A — Docker Compose em VPS Linux
 

@@ -23,7 +23,7 @@ Ao concluir uma etapa:
 - Mudança de banco = nova migração em `supabase/migrations/` (nunca editar migração já aplicada).
 - Nunca comitar `.env` ou credenciais.
 - Identidade visual oficial FAVIS (marrom `#2D1500`, laranja `#FF8801`): tokens em `apps/web/src/styles/brand.css`, arquivos em `apps/web/public/brand/`. Laranja só em preenchimentos; texto usa `accent-ink`.
-- Produção: Supabase (banco + Auth) + VPS Hostinger (`docker-compose.prod.yml`, `deploy/`), domínio `assistente.favisdesign.com.br`.
+- Produção: Supabase (banco + Auth) + VPS Hostinger com **Easypanel** (serviço Compose com `docker-compose.easypanel.yml`; a VPS hospeda outros sites — nunca publicar portas nem ocupar 80/443), domínio `assistente.favisdesign.com.br`.
 
 ## Comandos
 
