@@ -1,7 +1,7 @@
 import { ACTIVITY_STATUS_LABELS, type ActivityStatus } from '@fav/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Copy, MessageSquarePlus, Pencil, Sparkles, Trash2 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { Camera, Check, Copy, MessageSquarePlus, Pencil, Sparkles, Trash2 } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge, ErrorState, LoadingBlock } from '@/components/ui/display';
@@ -32,9 +32,9 @@ function actionLabel(from: ActivityStatus, to: ActivityStatus) {
   return ACTION_LABEL[to] ?? ACTIVITY_STATUS_LABELS[to];
 }
 
-function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+function Section({ title, children, action, id }: { title: string; children: ReactNode; action?: ReactNode; id?: string }) {
   return (
-    <section className="border-t px-5 py-4 first:border-t-0">
+    <section id={id} className="scroll-mt-4 border-t px-5 py-4 first:border-t-0">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <h3 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
         {action}
@@ -76,11 +76,14 @@ export function ActivityDetailSheet({
   activityId,
   onClose,
   onEdit,
+  focusEvidence,
 }: {
   companyId: string;
   activityId: string | null;
   onClose: () => void;
   onEdit?: (a: Activity) => void;
+  /** Abre já posicionado na seção de evidências (atalho "Enviar foto"). */
+  focusEvidence?: boolean;
 }) {
   const qc = useQueryClient();
   const { can } = useAuth();
@@ -96,6 +99,14 @@ export function ActivityDetailSheet({
   });
   const a = q.data;
   const base = `/companies/${companyId}/activities/${activityId}`;
+  const evidenceSectionId = `evidencias-${activityId}`;
+  const scrollToEvidence = () =>
+    document.getElementById(evidenceSectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const loaded = !!a;
+  useEffect(() => {
+    if (focusEvidence && loaded) setTimeout(scrollToEvidence, 150);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusEvidence, loaded]);
   const refresh = () => invalidateActivityQueries(qc, companyId);
 
   const changeStatus = useMutation({
@@ -201,6 +212,14 @@ export function ActivityDetailSheet({
               </div>
             )}
 
+            {a.status !== 'cancelada' && (
+              <div className="px-5 pt-3">
+                <Button size="sm" variant="secondary" onClick={scrollToEvidence} className="w-full sm:w-fit">
+                  <Camera /> Enviar foto ou vídeo
+                </Button>
+              </div>
+            )}
+
             {canManage && (
               <div className="flex flex-wrap gap-2 px-5 pt-3">
                 {onEdit && (
@@ -250,7 +269,7 @@ export function ActivityDetailSheet({
                 </Section>
               )}
 
-              <Section title={`Evidências (${a.evidences?.length ?? 0})`}>
+              <Section id={evidenceSectionId} title={`Evidências (${a.evidences?.length ?? 0})`}>
                 <EvidenceSection companyId={companyId} activity={a} />
               </Section>
 

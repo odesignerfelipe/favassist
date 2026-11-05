@@ -10,6 +10,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registro feito em src/main.tsx (recarrega sozinho quando há versão nova)
+      injectRegister: false,
       includeAssets: ['brand/icon-48.png', 'brand/icon-180.png'],
       manifest: {
         name: 'FAV Assist',
