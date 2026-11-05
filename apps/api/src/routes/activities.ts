@@ -116,12 +116,13 @@ export async function changeActivityStatus(
   if (to === 'impedida' && message.trim().length < 3) {
     throw unprocessable('Descreva a dificuldade que impediu a tarefa');
   }
-  await tx.query('update activities set status = $1 where id = $2', [to, activityId]);
+  // Registra a mensagem antes da mudança: o aviso de "dificuldade" (trigger) já leva o motivo
   await tx.query(
     `insert into activity_updates (company_id, activity_id, user_id, kind, from_status, to_status, message)
      values ($1, $2, $3, 'status', $4, $5, $6)`,
     [companyId, activityId, actor.userId, from, to, message],
   );
+  await tx.query('update activities set status = $1 where id = $2', [to, activityId]);
   return { ...current, status: to };
 }
 

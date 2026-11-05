@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Circle, PartyPopper } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ActivityDetailSheet } from '@/components/activity/activity-detail';
 import { formatLabel, PillarTag, StatusBadge } from '@/components/activity/badges';
@@ -81,6 +82,15 @@ export default function ChecklistPage() {
   const [date, setDate] = useState(todayISO());
   const [open, setOpen] = useState<{ activity: Activity; focusEvidence: boolean } | null>(null);
   const openTask = (activity: Activity, focusEvidence = false) => setOpen({ activity, focusEvidence });
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const id = params.get('atividade');
+    const companyId = params.get('empresa');
+    if (id && companyId) {
+      setOpen({ activity: { id, companyId } as Activity, focusEvidence: false });
+      setParams({}, { replace: true });
+    }
+  }, [params, setParams]);
   const q = useQuery({ queryKey: ['checklist', date], queryFn: () => api.get<Checklist>('/me/checklist', { date }), refetchInterval: 60_000 });
   const multi = (user?.companies.length ?? 0) > 1;
   const isToday = date === todayISO();

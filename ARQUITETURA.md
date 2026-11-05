@@ -199,6 +199,21 @@ leitura: API gera link TEMPORÁRIO (1 h) somente para quem enxerga a evidência
 - Limite por arquivo: `UPLOAD_MAX_MB` (padrão 50 MB, limite do plano gratuito do Supabase); nginx aceita até 60 MB.
 - Base para a etapa de análise de conteúdo por IA (os arquivos já ficam organizados por empresa e atividade).
 
+## 8.2 Notificações no app
+
+Geradas **por triggers no banco** (migração 0600), então nenhuma rota precisa lembrar de criá-las:
+
+| Evento | Quem recebe |
+|---|---|
+| Tarefa atribuída (criação ou troca de responsável; não para pendentes/canceladas) | Responsável (exceto se ele mesmo fez a ação) |
+| Tarefa aprovada (pendente → aprovada) | Responsável |
+| Tarefa impedida (com o motivo informado) | Proprietários e gerentes ativos |
+| Atividades aguardando aprovação | Proprietários e gerentes — **um único aviso não lido por empresa**, atualizado com o total ("7 atividades aguardando aprovação") |
+
+- RLS: cada usuário só lê e só marca como lidas as próprias notificações (`grant update (read_at)` — nenhuma outra coluna).
+- App: sino com contador (atualiza a cada minuto e ao voltar para o app); o aviso leva direto à tarefa (`?atividade=`).
+- Próximo passo: Web Push no PWA (exige chaves VAPID) para avisar com o app fechado.
+
 ## 9. Integrações futuras (estrutura)
 
 `social_accounts` (instagram, facebook, google_business) com status de conexão e `social_metrics` (métrica, valor, período, fonte). Dashboards só exibem dados existentes nessas tabelas; sem conexão, mostram estado vazio com orientação. Tokens OAuth deverão ser guardados cifrados (planejado: `app_private.integration_credentials` com criptografia via chave do servidor).
