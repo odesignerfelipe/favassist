@@ -158,7 +158,7 @@ Produção em `https://assistente.favisdesign.com.br`. A VPS já roda o Easypane
 4. *Domains*: adicione `assistente.favisdesign.com.br` com o interruptor **HTTPS ligado** e, em **Destino**: Protocolo **HTTP** (o contêiner não fala HTTPS — o Easypanel termina o TLS), Porta **80**, Serviço Compose **`web`**. Com protocolo HTTPS ou serviço vazio, o site mostra "Service is not reachable" (502). Após salvar, clique em **Implantar**.
 5. **Deploy.** O serviço `migrate` aplica as migrações no Supabase e cria o Administrador FAVIS (variáveis `SEED_ADMIN_*`). Após o primeiro login, apague `SEED_ADMIN_PASSWORD` do Environment.
 
-**4. Atualizações** — novo deploy pelo Easypanel (ou ative o deploy automático/webhook do serviço para cada push na branch).
+**4. Atualizações automáticas** — copie a URL do *Gatilho de Implantação* do serviço `app` no Easypanel e salve-a no GitHub em *Settings → Secrets and variables → Actions → New repository secret* com o nome `EASYPANEL_DEPLOY_URL`. A partir daí, todo merge no `main` que passar no CI é publicado sozinho pelo workflow [`deploy.yml`](.github/workflows/deploy.yml). Sem o segredo, publique manualmente com **Implantar** no Easypanel.
 
 > `deploy/install.sh` + `docker-compose.prod.yml` são a alternativa para uma **VPS dedicada** sem painel (Caddy com HTTPS próprio). O script se recusa a rodar se encontrar Easypanel ou as portas 80/443 ocupadas.
 
