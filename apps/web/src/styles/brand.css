@@ -1,0 +1,39 @@
+/*
+ * =============================================================================
+ * TOKENS DE MARCA — FAV Assist by FAVIS
+ * Identidade oficial FAVIS Design Studio: marrom #2D1500 + laranja #FF8801.
+ * Arquivos de logotipo em public/brand/ (ver README.md da pasta).
+ * =============================================================================
+ */
+:root {
+  /* Marrom FAVIS — ação principal, superfícies de marca */
+  --brand: 45 21 0;
+  --brand-foreground: 247 247 247;
+  /* Laranja FAVIS — preenchimentos (progresso, seleção, destaques).
+     Para TEXTO use --accent-ink (o laranja puro não tem contraste suficiente sobre branco). */
+  --accent: 255 136 1;
+  --accent-ink: 168 84 0;
+  --accent-soft: 255 244 230;
+
+  /* Superfícies e texto (neutros quentes, derivados do marrom) */
+  --background: 250 249 247;
+  --surface: 255 255 255;
+  --surface-muted: 245 242 239;
+  --foreground: 33 22 10;
+  --muted-foreground: 112 100 90;
+  --border: 233 227 221;
+  --ring: 255 136 1;
+
+  /* Estados */
+  --success: 21 128 61;
+  --success-soft: 240 253 244;
+  --warning: 180 83 9;
+  --warning-soft: 255 251 235;
+  --danger: 185 28 28;
+  --danger-soft: 254 242 242;
+  --info: 29 78 216;
+  --info-soft: 239 246 255;
+
+  --radius: 0.75rem;
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}

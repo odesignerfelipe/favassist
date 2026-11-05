@@ -53,7 +53,7 @@ Provedor configurável por `AUTH_PROVIDER`:
 
 Fluxo (idêntico para o front-end nos dois modos):
 
-1. `POST /api/auth/login` → `{ accessToken, expiresAt, user }` + cookie `fav_rt` (httpOnly, `SameSite=Strict`, `Path=/api/auth`, `Secure` em produção).
+1. `POST /api/auth/login` → `{ accessToken, expiresAt, user }` + cookie `fav_rt` (httpOnly, `SameSite=Strict`, `Path=/api/auth`, `Secure` em produção — ajustável por `COOKIE_SECURE`).
 2. O front guarda o access token **apenas em memória** e o envia como `Authorization: Bearer`.
 3. Ao carregar a página ou receber 401, chama `POST /api/auth/refresh` (usa o cookie) e repete a requisição.
 4. `POST /api/auth/logout` revoga o refresh token e limpa o cookie.
@@ -157,7 +157,9 @@ API (rota /ai/plans) ─▶ cria ai_generations(status=pendente) ─▶ fila "ai
           ─▶ grava resultado + avisos ─▶ usuário revisa ─▶ "aplicar" cria atividades (ai_generated=true, pendente_aprovacao)
 ```
 
-- Provedor configurável: `AI_PROVIDER=anthropic|openai_compatible|none` + `AI_MODEL`. Chaves **somente** em variáveis de ambiente do servidor.
+- Provedor configurável por `AI_PROVIDER` (`anthropic` | `none`) + `AI_MODEL` (padrão `claude-opus-5-5`). Novos provedores entram implementando a interface `AIProvider` (`packages/ai-engine/src/types.ts`) — sem mudar regras de negócio. Chaves **somente** em variáveis de ambiente do servidor.
+- Provedor Anthropic: SDK oficial, saída estruturada por schema (`output_config.format`), pensamento adaptativo com esforço `high`, streaming para respostas longas, *fallback* do lado do servidor (`fallbacks: "default"`) quando o classificador de segurança recusa a solicitação, e tratamento tipado de erros (limite de uso, autenticação, tempo esgotado, indisponibilidade).
+- Itens aplicados ao calendário entram como **pendente de aprovação**, com os pontos a verificar nas observações: a IA propõe, a equipe decide.
 - Sem provedor configurado, a interface informa claramente que a IA está desativada — não há geração simulada.
 - Tendências: só entram no contexto quando houver fonte verificável integrada (ainda não há; o prompt proíbe inventar).
 
@@ -180,6 +182,22 @@ apps/api
 - Pausa: por grupo (`paused`) e global (`platform_settings.messaging_enabled`).
 - O app não depende do WhatsApp: cronogramas ficam sempre no app; falhas de envio só geram registros.
 - A conexão real (provedor não oficial ou API oficial do WhatsApp Business) entra como nova implementação de `MessagingProvider`, sem alterar regras de negócio. Riscos documentados em `ROADMAP.md`.
+
+## 8.1 Arquivos de evidência (fotos e vídeos)
+
+```
+app (celular) ──multipart──▶ API ── confere permissão (RLS na atividade)
+                              ├─ valida tipo pelo cabeçalho E pela assinatura binária (JPG/PNG/WEBP/HEIC, MP4/MOV/WEBM)
+                              ├─ grava em <empresa>/<atividade>/<uuid>.<ext>  ← FileStorage
+                              └─ registra activity_evidences (kind=arquivo, mime, tamanho)
+leitura: API gera link TEMPORÁRIO (1 h) somente para quem enxerga a evidência
+```
+
+- `FileStorage` (`apps/api/src/storage`): **Supabase Storage** em produção (bucket privado `evidencias`, criado na subida da API, acesso com a chave secreta só no servidor) ou **disco local** em desenvolvimento/testes (links assinados com HMAC servidos por `GET /api/files/...`).
+- O banco impede caminhos fora da pasta da própria empresa/atividade (CHECK na migração 0500).
+- Remover a evidência ou a atividade apaga também os arquivos.
+- Limite por arquivo: `UPLOAD_MAX_MB` (padrão 50 MB, limite do plano gratuito do Supabase); nginx aceita até 60 MB.
+- Base para a etapa de análise de conteúdo por IA (os arquivos já ficam organizados por empresa e atividade).
 
 ## 9. Integrações futuras (estrutura)
 
@@ -209,3 +227,17 @@ A qualidade é favorecida (evidência, prazo) e a quantidade pura é limitada: o
 | Redis opcional em desenvolvimento | Sem Redis, IA roda em segundo plano no próprio processo e o envio diário é manual; em produção, usar Redis. |
 | Componentes shadcn/ui escritos no repositório | Padrão shadcn (Radix + Tailwind + CVA), sem depender do CLI na build. |
 | Identidade visual em tokens (`apps/web/src/styles/brand.css`) | Substituição simples quando os arquivos oficiais da FAVIS forem entregues. |
+| Web e API no mesmo domínio (nginx faz proxy de `/api`) | Cookie de refresh `SameSite=Strict` sem CORS; o service worker do PWA nunca guarda respostas da API. |
+| Uma imagem Docker com dois alvos (`api`, `web`) | API, worker e migração usam a mesma imagem com comandos diferentes. |
+
+## 12. Implantação
+
+```
+               ┌──────────── docker compose ────────────┐
+ navegador ──▶ │ web (nginx: PWA + proxy /api) ──▶ api   │
+               │                     worker ──▶ redis    │
+               │ migrate (one-shot) ──▶ postgres ◀── api │
+               └─────────────────────────────────────────┘
+```
+
+Produção recomendada: TLS na frente do serviço `web`, `COOKIE_SECURE=true`, Postgres gerenciado (Supabase) ou com backup diário (ver README).
