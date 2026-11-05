@@ -12,9 +12,9 @@
 |---|---|
 | Identidade visual oficial FAVIS | ✅ Aplicada (cores, ícone FAV, logotipos, ícones do PWA) |
 | Supabase (projeto `mbctlwobwwpgzsusnovg`) | ✅ API compatível com as chaves novas (`sb_publishable_`/`sb_secret_`) e JWKS ES256 — testado contra o projeto real (login e verificação de token). ⏳ Migrações ainda não aplicadas (precisam da string de conexão, digitada na VPS). |
-| Implantação na VPS Hostinger | A VPS já roda **Easypanel** (com `gestao.caicosabores.com`): implantação via serviço Compose do Easypanel com `docker-compose.easypanel.yml` (sem portas publicadas, aliases internos exclusivos, migração + criação do admin automáticas). ✅ Validado localmente: pilha completa (imagens api e web, nginx, redis, worker), E2E do Marco 1 pelo nginx e reimplantação idempotente. ⏳ Configuração no painel pelo responsável (README → "Implantação oficial"). `install.sh` (VPS dedicada) agora aborta se detectar Easypanel ou portas 80/443 ocupadas. |
-| Domínio | `assistente.favisdesign.com.br` — ⏳ registro DNS A pendente |
-| Ajustes de segurança no Supabase | ⏳ Desativar cadastro público (hoje **habilitado**), desativar a Data API, definir Site URL |
+| Implantação na VPS Hostinger | ✅ **No ar em https://assistente.favisdesign.com.br** (05/11/2026) via serviço Compose do Easypanel (`docker-compose.easypanel.yml`), sem interferir em `gestao.caicosabores.com`. Verificado em produção: página e PWA, `/api/health` (Supabase + Redis/BullMQ), login inválido recusado via Supabase Auth, migrações aplicadas (tabelas existem e o papel `anon` não tem acesso). Lição: no domínio do Easypanel o destino deve ser Protocolo HTTP, porta 80, Serviço Compose `web`. |
+| Domínio | ✅ `assistente.favisdesign.com.br` → A `187.127.63.111` (ALIAS antigo da hospedagem removido); certificado Let's Encrypt emitido pelo Easypanel |
+| Ajustes de segurança no Supabase | ⏳ Verificado em 05/11: cadastro público ainda **habilitado** e Data API ainda **ativa** (o `anon` já é bloqueado pelas permissões, mas usuários logados poderiam escrever direto pela Data API, sem as regras de permissão da API). Pendente: desativar ambos e definir a Site URL. |
 
 ### Funcionalidades concluídas (com comportamento real e persistência)
 
@@ -83,8 +83,8 @@
 
 ## Continuidade
 
-- **Última tarefa realizada:** marca oficial aplicada; compatibilidade com o Supabase real; artefatos de implantação na VPS.
-- **Próximo passo recomendado:** acompanhar a primeira implantação (README → "Implantação oficial"), validar o login com Supabase Auth em produção e rodar o E2E contra `https://assistente.favisdesign.com.br`; depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
+- **Última tarefa realizada:** primeira implantação em produção (Easypanel + Supabase) concluída e verificada.
+- **Próximo passo recomendado:** confirmar os ajustes de segurança do Supabase e o primeiro login do administrador; mesclar `feat/primeira-entrega` no `main` (e apontar o Easypanel para `main`); depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
 - **Para retomar:**
 
 ```bash
@@ -100,9 +100,8 @@ pnpm dev
 ```
 
 - **Configurações pendentes (precisam do responsável pela FAVIS):**
-  - Criar o serviço Compose no Easypanel e preencher o Environment (chave secreta e string de conexão do Supabase).
-  - Registro DNS A `assistente` → IP da VPS.
-  - Ajustes de segurança no painel do Supabase (ver README).
+  - Ajustes de segurança no painel do Supabase (desativar cadastro público e Data API; Site URL).
+  - Após o primeiro login: apagar `SEED_ADMIN_PASSWORD` do Environment do Easypanel e reimplantar.
   - Chave de API da Anthropic (`AI_API_KEY`).
   - Segredos `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` no GitHub para implantação automática.
   - Decisão sobre a integração do WhatsApp (solução não oficial × API oficial do WhatsApp Business) — ver riscos no ROADMAP.
