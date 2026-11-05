@@ -1,10 +1,13 @@
-name: Deploy (VPS)
+name: Deploy (Easypanel)
 
-# Implantação contínua na VPS via SSH.
-# Configure em Settings → Secrets and variables → Actions:
-#   VPS_HOST (IP da VPS), VPS_USER (ex.: root), VPS_SSH_KEY (chave privada com acesso à VPS)
+# Implantação contínua: quando o CI do `main` passa, aciona o gatilho de implantação do Easypanel.
+# Configure em GitHub → Settings → Secrets and variables → Actions → New repository secret:
+#   EASYPANEL_DEPLOY_URL = URL do "Gatilho de Implantação" do serviço `app` no Easypanel
+# Sem o segredo, o workflow apenas avisa e não faz nada.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -14,21 +17,25 @@ concurrency:
 
 jobs:
   deploy:
+    # Só implanta código que passou no CI (ou acionamento manual)
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    environment: production
     steps:
-      - name: Verificar segredos
-        id: check
+      - name: Acionar a implantação no Easypanel
         env:
-          HOST: ${{ secrets.VPS_HOST }}
+          DEPLOY_URL: ${{ secrets.EASYPANEL_DEPLOY_URL }}
         run: |
-          if [ -z "$HOST" ]; then echo "Segredos da VPS não configurados — implantação ignorada."; echo "ok=false" >> "$GITHUB_OUTPUT"; else echo "ok=true" >> "$GITHUB_OUTPUT"; fi
-      - name: Atualizar a VPS
-        if: steps.check.outputs.ok == 'true'
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 30m
-          script: BRANCH=main /opt/fav-assist/deploy/update.sh
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::notice::EASYPANEL_DEPLOY_URL não configurado — implantação automática desativada."
+            exit 0
+          fi
+          code=$(curl -sS --max-time 60 -o response.txt -w '%{http_code}' -X POST "$DEPLOY_URL" || echo 000)
+          if [ "$code" = "404" ] || [ "$code" = "405" ]; then
+            code=$(curl -sS --max-time 60 -o response.txt -w '%{http_code}' "$DEPLOY_URL" || echo 000)
+          fi
+          echo "Easypanel respondeu HTTP $code"
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "::error::Falha ao acionar a implantação (HTTP $code). Confira o segredo EASYPANEL_DEPLOY_URL."
+            exit 1
+          fi
+          echo "Implantação acionada. Acompanhe no Easypanel → serviço app → Histórico de Implantação."

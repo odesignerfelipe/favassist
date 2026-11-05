@@ -4,6 +4,7 @@ import { ArrowRight, CalendarPlus, ClipboardList, FileText, Sparkles } from 'luc
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ActivityDetailSheet } from '@/components/activity/activity-detail';
+import { ApprovalQueue } from '@/components/activity/approval-queue';
 import { PILLAR_DOT, StatusBadge } from '@/components/activity/badges';
 import { Button } from '@/components/ui/button';
 import {
@@ -87,6 +88,8 @@ export default function OverviewPage() {
           </Button>
         </Card>
       )}
+
+      <ApprovalQueue companyId={companyId} onOpen={setOpenId} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
