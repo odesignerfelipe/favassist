@@ -12,6 +12,8 @@ x-app: &app
     NODE_ENV: production
     REDIS_URL: redis://fav-assist-redis:6379
     FAV_REPO_ROOT: /app
+    # Traefik (Easypanel) → nginx (web) → API
+    TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-2}
 
 services:
   redis:

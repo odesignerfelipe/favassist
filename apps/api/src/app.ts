@@ -50,7 +50,9 @@ export async function buildApp(deps: AppDeps, opts: { logger?: boolean } = {}): 
             redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
             transport: cfg.NODE_ENV === 'development' ? { target: 'pino-pretty' } : undefined,
           },
-    trustProxy: true,
+    // Confia apenas nos proxies reais à frente da API; o restante do X-Forwarded-For é ignorado
+    // (hop 0 = conexão direta, ex.: nginx; hop 1 = proxy anterior, ex.: Traefik)
+    trustProxy: cfg.TRUST_PROXY_HOPS > 0 ? (_addr: string, hop: number) => hop < cfg.TRUST_PROXY_HOPS : false,
     bodyLimit: 1_048_576,
   }).withTypeProvider<ZodTypeProvider>();
 

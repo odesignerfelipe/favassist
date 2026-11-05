@@ -19,6 +19,7 @@
 | Fila de aprovações | ✅ Quadro "Aguardando aprovação" na visão geral da empresa (aprovar uma a uma ou todas), essencial para revisar os planejamentos da IA. Testado no navegador. |
 | Implantação automática | ✅ Workflow `deploy.yml`: após o CI verde no `main`, aciona o gatilho do Easypanel (segredo `EASYPANEL_DEPLOY_URL`). ⏳ Segredo a cadastrar no GitHub. |
 | Ajustes de segurança no Supabase | ✅ Concluídos em 05/11/2026: cadastro público desligado, Data API desativada (verificado: o endpoint REST não serve mais tabelas) e Site URL `https://assistente.favisdesign.com.br`. |
+| Limite de tentativas de login | 🔧 Corrigido no branch `fix/limite-login` (aguardando aprovação para publicar). Falha encontrada na auditoria 2.0: com `trustProxy: true`, o cliente forjava o IP pelo `X-Forwarded-For` e contornava o limite de 10 tentativas/min. Agora a API confia só em `TRUST_PROXY_HOPS` proxies (Easypanel = 2) e há bloqueio de 15 min por e-mail após `LOGIN_MAX_FAILURES_PER_EMAIL` (10) falhas, vindas de qualquer IP. 4 testes novos. |
 
 ### Funcionalidades concluídas (com comportamento real e persistência)
 
