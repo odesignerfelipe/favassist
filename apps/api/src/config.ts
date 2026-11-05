@@ -25,6 +25,14 @@ const envSchema = z
     AUTH_JWT_SECRET: optionalString,
     AUTH_ACCESS_TTL_SECONDS: z.coerce.number().int().min(60).default(900),
     AUTH_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).default(14),
+    /**
+     * Quantos proxies confiáveis existem à frente da API (para descobrir o IP real do cliente).
+     * Easypanel: Traefik → nginx → API = 2. Desenvolvimento (Vite) e compose local = 1.
+     * Um valor maior que o real permite ao cliente forjar o IP (X-Forwarded-For).
+     */
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+    /** Tentativas de login com erro por e-mail, numa janela de 15 minutos, antes do bloqueio temporário. */
+    LOGIN_MAX_FAILURES_PER_EMAIL: z.coerce.number().int().min(3).max(100).default(10),
     /** Cookie de sessão com flag Secure. Padrão: true em produção. Use false só sem HTTPS (ex.: teste local). */
     COOKIE_SECURE: z
       .enum(['true', 'false', ''])

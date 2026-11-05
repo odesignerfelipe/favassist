@@ -4,7 +4,8 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { Session } from '../auth/provider';
 import { many } from '../db/database';
 import { loadAuthContext, requireAuth, withUser } from '../lib/context';
-import { unauthorized, unprocessable } from '../lib/errors';
+import { AppError, unauthorized, unprocessable } from '../lib/errors';
+import { LoginGuard } from '../auth/login-guard';
 
 export const REFRESH_COOKIE = 'fav_rt';
 
@@ -44,7 +45,8 @@ export async function buildMe(req: FastifyRequest) {
 }
 
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
-  const { auth, db } = app.deps;
+  const { auth, db, cfg } = app.deps;
+  const guard = new LoginGuard(cfg.LOGIN_MAX_FAILURES_PER_EMAIL);
 
   async function respondWithSession(req: FastifyRequest, reply: FastifyReply, session: Session) {
     const claims = await auth.verifyAccessToken(session.accessToken);
@@ -62,7 +64,19 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
     },
     async (req, reply) => {
-      const session = await auth.login(req.body.email, req.body.password, { userAgent: req.headers['user-agent'] });
+      const wait = guard.blockedFor(req.body.email);
+      if (wait > 0) {
+        reply.header('retry-after', wait);
+        throw new AppError(429, 'muitas_tentativas', 'Muitas tentativas de login para este e-mail. Aguarde alguns minutos e tente novamente.');
+      }
+      let session;
+      try {
+        session = await auth.login(req.body.email, req.body.password, { userAgent: req.headers['user-agent'] });
+      } catch (err) {
+        if (err instanceof AppError && err.code === 'credenciais_invalidas') guard.recordFailure(req.body.email);
+        throw err;
+      }
+      guard.recordSuccess(req.body.email);
       return respondWithSession(req, reply, session);
     },
   );
