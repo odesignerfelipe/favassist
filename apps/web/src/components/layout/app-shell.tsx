@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand';
+import { NotificationBell } from './notification-bell';
 
 interface NavItem {
   to: string;
@@ -136,11 +137,12 @@ function UserMenu() {
   );
 }
 
-function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+function Sidebar({ onNavigate, showBell }: { onNavigate?: () => void; showBell?: boolean }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="px-4 pb-4 pt-5">
+      <div className="flex items-center justify-between px-4 pb-4 pt-5">
         <BrandMark />
+        {showBell && <NotificationBell className="-mr-2" />}
       </div>
       <div className="flex-1 overflow-y-auto px-2 py-2">
         <NavList onNavigate={onNavigate} />
@@ -161,12 +163,14 @@ export function AppShell({ children }: { children?: ReactNode }) {
         Ir para o conteúdo
       </a>
       <aside className="sticky top-0 hidden h-dvh border-r bg-surface lg:block">
-        <Sidebar />
+        <Sidebar showBell />
       </aside>
 
       {/* Barra superior no celular/tablet */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-surface/90 px-4 backdrop-blur lg:hidden">
         <BrandMark />
+        <div className="flex items-center gap-1">
+        <NotificationBell />
         <D.Root open={open} onOpenChange={setOpen}>
           <D.Trigger className="rounded-md p-2 hover:bg-surface-muted" aria-label="Abrir menu">
             <Menu className="size-5" />
@@ -180,6 +184,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
             </D.Content>
           </D.Portal>
         </D.Root>
+        </div>
       </header>
 
       <main id="conteudo" key={location.pathname.split('/').slice(0, 3).join('/')} className="min-w-0 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">

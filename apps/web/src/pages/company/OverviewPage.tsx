@@ -1,8 +1,8 @@
 import { ACTIVITY_STATUS_LABELS, CONTENT_PILLAR_LABELS, type ActivityStatus } from '@fav/shared';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, CalendarPlus, ClipboardList, FileText, Sparkles } from 'lucide-react';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ActivityDetailSheet } from '@/components/activity/activity-detail';
 import { ApprovalQueue } from '@/components/activity/approval-queue';
 import { PILLAR_DOT, StatusBadge } from '@/components/activity/badges';
@@ -31,7 +31,15 @@ export default function OverviewPage() {
   const companyId = useCompanyId();
   const { can } = useAuth();
   const [period, setPeriod] = useState<'week' | 'month'>('week');
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(() => params.get('atividade'));
+  useEffect(() => {
+    const id = params.get('atividade');
+    if (id) {
+      setOpenId(id);
+      setParams({}, { replace: true });
+    }
+  }, [params, setParams]);
   const range = period === 'week' ? weekRange(new Date()) : monthRange(new Date());
   const q = useQuery({
     queryKey: ['dashboard', companyId, range.from, range.to],
