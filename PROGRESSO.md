@@ -15,6 +15,7 @@
 | Implantação na VPS Hostinger | ✅ **No ar em https://assistente.favisdesign.com.br** (05/11/2026) via serviço Compose do Easypanel (`docker-compose.easypanel.yml`), sem interferir em `gestao.caicosabores.com`. Verificado em produção: página e PWA, `/api/health` (Supabase + Redis/BullMQ), login inválido recusado via Supabase Auth, migrações aplicadas (tabelas existem e o papel `anon` não tem acesso). Lição: no domínio do Easypanel o destino deve ser Protocolo HTTP, porta 80, Serviço Compose `web`. |
 | Domínio | ✅ `assistente.favisdesign.com.br` → A `187.127.63.111` (ALIAS antigo da hospedagem removido); certificado Let's Encrypt emitido pelo Easypanel |
 | Evidências em foto e vídeo | ✅ Envio pelo app (com progresso), validação de tipo pelo conteúdo, Supabase Storage em produção (bucket privado `evidencias`, links temporários de 1 h), disco local em dev; remoção apaga o arquivo; pontos de evidência valem para arquivos. Migração 0500. Testado: 10 testes de API + envio real pelo navegador (celular). ⏳ Em produção, validar o primeiro envio após o próximo deploy. |
+| Atualização do app e acesso ao envio de fotos | ✅ O PWA detecta versão nova e recarrega sozinho (verifica a cada hora e ao voltar para o app) — antes, quem já tinha aberto o app via a versão antiga. Atalho "Foto" em cada tarefa do checklist e botão "Enviar foto ou vídeo" no topo do painel da tarefa. Testado no navegador (atualização automática e envio pelo atalho). |
 | Fila de aprovações | ✅ Quadro "Aguardando aprovação" na visão geral da empresa (aprovar uma a uma ou todas), essencial para revisar os planejamentos da IA. Testado no navegador. |
 | Implantação automática | ✅ Workflow `deploy.yml`: após o CI verde no `main`, aciona o gatilho do Easypanel (segredo `EASYPANEL_DEPLOY_URL`). ⏳ Segredo a cadastrar no GitHub. |
 | Ajustes de segurança no Supabase | ✅ Concluídos em 05/11/2026: cadastro público desligado, Data API desativada (verificado: o endpoint REST não serve mais tabelas) e Site URL `https://assistente.favisdesign.com.br`. |
@@ -86,7 +87,7 @@
 
 ## Continuidade
 
-- **Última tarefa realizada:** fila de aprovações e implantação automática pelo Easypanel. Evidências em foto/vídeo já publicadas em produção (05/11), aguardando o primeiro envio real para validação final.
+- **Última tarefa realizada:** atualização automática do PWA e atalhos de envio de foto (login de administrador confirmado em produção); antes disso, fila de aprovações e implantação automática pelo Easypanel. Evidências em foto/vídeo já publicadas em produção (05/11), aguardando o primeiro envio real para validação final.
 - **Próximo passo recomendado:** implantar e validar as evidências em foto/vídeo em produção; mesclar o PR odesignerfelipe/favassist#1 (`feat/primeira-entrega` → `main`) e apontar o Easypanel para `main`; depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
 - **Para retomar:**
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, ChevronLeft, ChevronRight, Circle, PartyPopper } from 'lucide-react';
+import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Circle, PartyPopper } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ActivityDetailSheet } from '@/components/activity/activity-detail';
@@ -11,7 +11,17 @@ import { useAuth } from '@/lib/auth';
 import type { Activity, Checklist } from '@/lib/types';
 import { cn, formatDate, shiftISO, todayISO } from '@/lib/utils';
 
-function TaskItem({ a, onOpen, showDate, multiCompany }: { a: Activity; onOpen: (a: Activity) => void; showDate?: boolean; multiCompany: boolean }) {
+function TaskItem({
+  a,
+  onOpen,
+  showDate,
+  multiCompany,
+}: {
+  a: Activity;
+  onOpen: (a: Activity, focusEvidence?: boolean) => void;
+  showDate?: boolean;
+  multiCompany: boolean;
+}) {
   const qc = useQueryClient();
   const done = a.status === 'concluida';
   const canComplete = a.availableTransitions?.includes('concluida');
@@ -49,6 +59,18 @@ function TaskItem({ a, onOpen, showDate, multiCompany }: { a: Activity; onOpen: 
           {a.callToAction && !done && <p className="mt-2 text-sm">➜ {a.callToAction}</p>}
           <span className="mt-2 inline-block text-sm text-accent-ink">Ver roteiro e orientações</span>
         </button>
+        {a.status !== 'cancelada' && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="shrink-0"
+            onClick={() => onOpen(a, true)}
+            aria-label={`Enviar foto ou vídeo: ${a.title}`}
+          >
+            <Camera /> <span className="sm:hidden">Foto</span>
+            <span className="hidden sm:inline">Enviar foto</span>
+          </Button>
+        )}
       </Card>
     </li>
   );
@@ -57,7 +79,8 @@ function TaskItem({ a, onOpen, showDate, multiCompany }: { a: Activity; onOpen: 
 export default function ChecklistPage() {
   const { user } = useAuth();
   const [date, setDate] = useState(todayISO());
-  const [open, setOpen] = useState<Activity | null>(null);
+  const [open, setOpen] = useState<{ activity: Activity; focusEvidence: boolean } | null>(null);
+  const openTask = (activity: Activity, focusEvidence = false) => setOpen({ activity, focusEvidence });
   const q = useQuery({ queryKey: ['checklist', date], queryFn: () => api.get<Checklist>('/me/checklist', { date }), refetchInterval: 60_000 });
   const multi = (user?.companies.length ?? 0) > 1;
   const isToday = date === todayISO();
@@ -108,7 +131,7 @@ export default function ChecklistPage() {
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-danger">Atrasadas ({d.overdue.length})</h2>
               <ul className="flex flex-col gap-3">
                 {d.overdue.map((a) => (
-                  <TaskItem key={a.id} a={a} onOpen={setOpen} showDate multiCompany={multi} />
+                  <TaskItem key={a.id} a={a} onOpen={openTask} showDate multiCompany={multi} />
                 ))}
               </ul>
             </section>
@@ -119,7 +142,7 @@ export default function ChecklistPage() {
             {d.today.length ? (
               <ul className="flex flex-col gap-3">
                 {d.today.map((a) => (
-                  <TaskItem key={a.id} a={a} onOpen={setOpen} multiCompany={multi} />
+                  <TaskItem key={a.id} a={a} onOpen={openTask} multiCompany={multi} />
                 ))}
               </ul>
             ) : (
@@ -135,14 +158,21 @@ export default function ChecklistPage() {
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Próximos dias</h2>
               <ul className="flex flex-col gap-3">
                 {d.upcoming.map((a) => (
-                  <TaskItem key={a.id} a={a} onOpen={setOpen} showDate multiCompany={multi} />
+                  <TaskItem key={a.id} a={a} onOpen={openTask} showDate multiCompany={multi} />
                 ))}
               </ul>
             </section>
           )}
         </div>
       )}
-      {open && <ActivityDetailSheet companyId={open.companyId} activityId={open.id} onClose={() => setOpen(null)} />}
+      {open && (
+        <ActivityDetailSheet
+          companyId={open.activity.companyId}
+          activityId={open.activity.id}
+          focusEvidence={open.focusEvidence}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </div>
   );
 }
