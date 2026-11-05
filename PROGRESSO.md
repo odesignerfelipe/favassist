@@ -15,7 +15,7 @@
 | Implantação na VPS Hostinger | ✅ **No ar em https://assistente.favisdesign.com.br** (05/11/2026) via serviço Compose do Easypanel (`docker-compose.easypanel.yml`), sem interferir em `gestao.caicosabores.com`. Verificado em produção: página e PWA, `/api/health` (Supabase + Redis/BullMQ), login inválido recusado via Supabase Auth, migrações aplicadas (tabelas existem e o papel `anon` não tem acesso). Lição: no domínio do Easypanel o destino deve ser Protocolo HTTP, porta 80, Serviço Compose `web`. |
 | Domínio | ✅ `assistente.favisdesign.com.br` → A `187.127.63.111` (ALIAS antigo da hospedagem removido); certificado Let's Encrypt emitido pelo Easypanel |
 | Evidências em foto e vídeo | ✅ Envio pelo app (com progresso), validação de tipo pelo conteúdo, Supabase Storage em produção (bucket privado `evidencias`, links temporários de 1 h), disco local em dev; remoção apaga o arquivo; pontos de evidência valem para arquivos. Migração 0500. Testado: 10 testes de API + envio real pelo navegador (celular). ⏳ Em produção, validar o primeiro envio após o próximo deploy. |
-| Ajustes de segurança no Supabase | ✅ Cadastro público desligado (05/11). ⏳ Data API ainda **ativa** (o `anon` já é bloqueado pelas permissões, mas usuários logados poderiam escrever direto pela Data API, sem as regras de permissão da API). Pendente: desativar a Data API e definir a Site URL. |
+| Ajustes de segurança no Supabase | ✅ Concluídos em 05/11/2026: cadastro público desligado, Data API desativada (verificado: o endpoint REST não serve mais tabelas) e Site URL `https://assistente.favisdesign.com.br`. |
 
 ### Funcionalidades concluídas (com comportamento real e persistência)
 
@@ -85,7 +85,7 @@
 ## Continuidade
 
 - **Última tarefa realizada:** evidências em foto e vídeo (Supabase Storage) — aguardando deploy em produção.
-- **Próximo passo recomendado:** confirmar os ajustes de segurança do Supabase e o primeiro login do administrador; mesclar `feat/primeira-entrega` no `main` (e apontar o Easypanel para `main`); depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
+- **Próximo passo recomendado:** implantar e validar as evidências em foto/vídeo em produção; mesclar o PR odesignerfelipe/favassist#1 (`feat/primeira-entrega` → `main`) e apontar o Easypanel para `main`; depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
 - **Para retomar:**
 
 ```bash
@@ -101,7 +101,6 @@ pnpm dev
 ```
 
 - **Configurações pendentes (precisam do responsável pela FAVIS):**
-  - Ajustes de segurança no painel do Supabase (desativar cadastro público e Data API; Site URL).
   - Após o primeiro login: apagar `SEED_ADMIN_PASSWORD` do Environment do Easypanel e reimplantar.
   - Chave de API da Anthropic (`AI_API_KEY`).
   - Segredos `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` no GitHub para implantação automática.
