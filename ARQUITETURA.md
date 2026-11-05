@@ -183,6 +183,22 @@ apps/api
 - O app não depende do WhatsApp: cronogramas ficam sempre no app; falhas de envio só geram registros.
 - A conexão real (provedor não oficial ou API oficial do WhatsApp Business) entra como nova implementação de `MessagingProvider`, sem alterar regras de negócio. Riscos documentados em `ROADMAP.md`.
 
+## 8.1 Arquivos de evidência (fotos e vídeos)
+
+```
+app (celular) ──multipart──▶ API ── confere permissão (RLS na atividade)
+                              ├─ valida tipo pelo cabeçalho E pela assinatura binária (JPG/PNG/WEBP/HEIC, MP4/MOV/WEBM)
+                              ├─ grava em <empresa>/<atividade>/<uuid>.<ext>  ← FileStorage
+                              └─ registra activity_evidences (kind=arquivo, mime, tamanho)
+leitura: API gera link TEMPORÁRIO (1 h) somente para quem enxerga a evidência
+```
+
+- `FileStorage` (`apps/api/src/storage`): **Supabase Storage** em produção (bucket privado `evidencias`, criado na subida da API, acesso com a chave secreta só no servidor) ou **disco local** em desenvolvimento/testes (links assinados com HMAC servidos por `GET /api/files/...`).
+- O banco impede caminhos fora da pasta da própria empresa/atividade (CHECK na migração 0500).
+- Remover a evidência ou a atividade apaga também os arquivos.
+- Limite por arquivo: `UPLOAD_MAX_MB` (padrão 50 MB, limite do plano gratuito do Supabase); nginx aceita até 60 MB.
+- Base para a etapa de análise de conteúdo por IA (os arquivos já ficam organizados por empresa e atividade).
+
 ## 9. Integrações futuras (estrutura)
 
 `social_accounts` (instagram, facebook, google_business) com status de conexão e `social_metrics` (métrica, valor, período, fonte). Dashboards só exibem dados existentes nessas tabelas; sem conexão, mostram estado vazio com orientação. Tokens OAuth deverão ser guardados cifrados (planejado: `app_private.integration_credentials` com criptografia via chave do servidor).

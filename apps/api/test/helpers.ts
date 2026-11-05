@@ -9,11 +9,16 @@ import { migrate } from '../src/db/migrate';
 import { InlineJobQueue } from '../src/queue';
 import { AiService } from '../src/services/ai';
 import { MessagingService } from '../src/services/messaging';
+import { LocalFileStorage } from '../src/storage';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 export const TEST_SECRET = 'test-secret-0123456789-0123456789-abcdef';
 
-export function testConfig() {
+export function testConfig(extra: Record<string, string> = {}) {
   return loadConfig({
+    ...extra,
     NODE_ENV: 'test',
     DATABASE_URL: process.env.TEST_DATABASE_URL,
     AUTH_PROVIDER: 'local',
@@ -31,8 +36,10 @@ export interface TestContext {
   close(): Promise<void>;
 }
 
-export async function createTestApp(opts: { aiProvider?: AIProvider | null; reset?: boolean } = {}): Promise<TestContext> {
-  const cfg = testConfig();
+export async function createTestApp(
+  opts: { aiProvider?: AIProvider | null; reset?: boolean; env?: Record<string, string> } = {},
+): Promise<TestContext> {
+  const cfg = testConfig(opts.env);
   if (opts.reset !== false) await migrate(cfg.DATABASE_URL, { localAuth: true, reset: true });
   const db = new Database(cfg.DATABASE_URL, { max: 5 });
   const ai = new AiService(db, opts.aiProvider ?? null);
@@ -44,7 +51,9 @@ export async function createTestApp(opts: { aiProvider?: AIProvider | null; rese
   });
   const queue = new InlineJobQueue((e) => console.error(e));
   queue.setHandlers({ aiGeneration: (id) => ai.runGeneration(id) });
-  const deps: AppDeps = { cfg, db, auth: new LocalAuthProvider(db, cfg), ai, messaging, queue };
+  const storage = new LocalFileStorage(mkdtempSync(join(tmpdir(), 'fav-uploads-')), TEST_SECRET);
+  await storage.ensureReady();
+  const deps: AppDeps = { cfg, db, auth: new LocalAuthProvider(db, cfg), ai, messaging, queue, storage };
   const app = await buildApp(deps, { logger: false });
   return {
     app,

@@ -50,7 +50,8 @@ async function logout(page) {
 }
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 }, locale: 'pt-BR' });
+// Navegador no fuso das empresas (Brasil), como os usuários reais
+const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 }, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo' });
 const page = await ctx.newPage();
 page.on('pageerror', (e) => console.error('Erro na página:', e.message));
 let companyUrl = '';

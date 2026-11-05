@@ -19,7 +19,22 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { buildUpdate, many, one, type Tx } from '../db/database';
 import { assertCompanyPermission, requireAuth, withUser } from '../lib/context';
-import { badRequest, forbidden, notFound, unprocessable } from '../lib/errors';
+import { randomUUID } from 'node:crypto';
+import { AppError, badRequest, forbidden, notFound, unprocessable } from '../lib/errors';
+import { ALLOWED_TYPES, matchesSignature, type FileStorage } from '../storage';
+
+/** Validade dos links de arquivos devolvidos ao app (segundos). */
+const FILE_URL_TTL = 3600;
+
+async function withFileUrls<T extends { kind: string; storagePath?: string | null }>(storage: FileStorage, rows: T[]) {
+  return Promise.all(
+    rows.map(async (e) => {
+      if (e.kind !== 'arquivo' || !e.storagePath) return { ...e, fileUrl: null };
+      const fileUrl = await storage.signedUrl(e.storagePath, FILE_URL_TTL).catch(() => null);
+      return { ...e, fileUrl };
+    }),
+  );
+}
 
 const params = z.object({ companyId: uuid });
 const itemParams = z.object({ companyId: uuid, activityId: uuid });
@@ -192,13 +207,18 @@ export const activityRoutes: FastifyPluginAsyncZod = async (app) => {
             where u.activity_id = $1 order by u.created_at desc`,
           [activity.id],
         );
-        const evidences = await many(
+        const evidences = await many<{ kind: string; storagePath: string | null }>(
           tx,
           `select e.*, p.full_name as created_by_name from activity_evidences e left join profiles p on p.id = e.created_by
             where e.activity_id = $1 order by e.created_at desc`,
           [activity.id],
         );
-        return { ...activity, updates, evidences, availableTransitions: transitionsFor(actor, activity) };
+        return {
+          ...activity,
+          updates,
+          evidences: await withFileUrls(app.deps.storage, evidences),
+          availableTransitions: transitionsFor(actor, activity),
+        };
       });
     },
   );
@@ -226,10 +246,20 @@ export const activityRoutes: FastifyPluginAsyncZod = async (app) => {
     { schema: { tags, summary: 'Excluir atividade', params: itemParams } },
     async (req, reply) => {
       assertCompanyPermission(req, req.params.companyId, 'activities.manage');
-      const res = await withUser(req, (tx) =>
-        tx.query('delete from activities where company_id = $1 and id = $2', [req.params.companyId, req.params.activityId]),
-      );
-      if (!res.rowCount) throw notFound('Atividade não encontrada');
+      const files = await withUser(req, async (tx) => {
+        const paths = await many<{ storagePath: string }>(
+          tx,
+          `select storage_path from activity_evidences where activity_id = $1 and storage_path is not null`,
+          [req.params.activityId],
+        );
+        const res = await tx.query('delete from activities where company_id = $1 and id = $2', [
+          req.params.companyId,
+          req.params.activityId,
+        ]);
+        if (!res.rowCount) throw notFound('Atividade não encontrada');
+        return paths;
+      });
+      await Promise.all(files.map((f) => app.deps.storage.remove(f.storagePath).catch(() => undefined)));
       return reply.status(204).send();
     },
   );
@@ -299,14 +329,81 @@ export const activityRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       assertCompanyPermission(req, req.params.companyId, 'activities.execute');
-      const res = await withUser(req, (tx) =>
-        tx.query('delete from activity_evidences where id = $1 and activity_id = $2', [
-          req.params.evidenceId,
-          req.params.activityId,
-        ]),
+      const removed = await withUser(req, (tx) =>
+        one<{ storagePath: string | null }>(
+          tx,
+          'delete from activity_evidences where id = $1 and activity_id = $2 returning storage_path',
+          [req.params.evidenceId, req.params.activityId],
+        ),
       );
-      if (!res.rowCount) throw notFound('Evidência não encontrada');
+      if (!removed) throw notFound('Evidência não encontrada');
+      if (removed.storagePath) await app.deps.storage.remove(removed.storagePath).catch(() => undefined);
       return reply.status(204).send();
+    },
+  );
+
+  app.post(
+    '/companies/:companyId/activities/:activityId/evidences/upload',
+    {
+      schema: {
+        tags,
+        summary: 'Enviar foto ou vídeo como evidência (multipart/form-data: file, description)',
+        params: itemParams,
+        consumes: ['multipart/form-data'],
+      },
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+    },
+    async (req, reply) => {
+      const { userId } = requireAuth(req);
+      assertCompanyPermission(req, req.params.companyId, 'activities.execute');
+      const { companyId, activityId } = req.params;
+      const { storage, cfg } = app.deps;
+
+      // Confere o acesso à atividade antes de receber o arquivo
+      const visible = await withUser(req, (tx) => getActivity(tx, companyId, activityId));
+      if (!visible) throw notFound('Atividade não encontrada');
+      if (visible.status === 'cancelada') throw unprocessable('Não é possível enviar evidências para uma atividade cancelada');
+
+      if (!req.isMultipart()) throw badRequest('Envie o arquivo como multipart/form-data');
+      const part = await req.file();
+      if (!part) throw badRequest('Nenhum arquivo enviado');
+      const type = ALLOWED_TYPES[part.mimetype];
+      if (!type) {
+        part.file.resume();
+        throw new AppError(415, 'tipo_nao_suportado', 'Formato não suportado. Envie foto (JPG, PNG, WEBP, HEIC) ou vídeo (MP4, MOV, WEBM).');
+      }
+      let data: Buffer;
+      try {
+        data = await part.toBuffer();
+      } catch {
+        throw new AppError(413, 'arquivo_grande', `Arquivo maior que o limite de ${cfg.UPLOAD_MAX_MB} MB`);
+      }
+      if (!data.length) throw badRequest('Arquivo vazio');
+      if (!matchesSignature(part.mimetype, data)) {
+        throw new AppError(415, 'tipo_nao_suportado', 'O conteúdo do arquivo não corresponde ao formato informado');
+      }
+      const descriptionField = part.fields.description as { value?: unknown } | undefined;
+      const description = typeof descriptionField?.value === 'string' ? descriptionField.value.trim().slice(0, 2000) : '';
+      const originalName = part.filename ? part.filename.slice(-255) : null;
+
+      const path = `${companyId}/${activityId}/${randomUUID()}.${type.ext}`;
+      await storage.put(path, data, part.mimetype);
+      try {
+        const row = await withUser(req, (tx) =>
+          one<{ kind: string; storagePath: string | null }>(
+            tx,
+            `insert into activity_evidences
+               (company_id, activity_id, kind, storage_path, description, mime_type, size_bytes, original_name, created_by)
+             values ($1, $2, 'arquivo', $3, $4, $5, $6, $7, $8) returning *`,
+            [companyId, activityId, path, description, part.mimetype, data.length, originalName, userId],
+          ),
+        );
+        const [withUrl] = await withFileUrls(storage, [row!]);
+        return reply.status(201).send(withUrl);
+      } catch (err) {
+        await storage.remove(path).catch(() => undefined);
+        throw err;
+      }
     },
   );
 

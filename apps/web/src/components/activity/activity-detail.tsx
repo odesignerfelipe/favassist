@@ -1,6 +1,6 @@
 import { ACTIVITY_STATUS_LABELS, type ActivityStatus } from '@fav/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Copy, ExternalLink, Link2, MessageSquarePlus, Pencil, Sparkles, Trash2 } from 'lucide-react';
+import { Check, Copy, MessageSquarePlus, Pencil, Sparkles, Trash2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import type { Activity } from '@/lib/types';
 import { cn, formatDate, formatDateTime } from '@/lib/utils';
 import { invalidateActivityQueries } from './activity-form';
 import { formatLabel, PillarTag, StatusBadge } from './badges';
+import { EvidenceSection } from './evidence-section';
 
 const ACTION_LABEL: Partial<Record<ActivityStatus, string>> = {
   em_andamento: 'Iniciar',
@@ -86,7 +87,6 @@ export function ActivityDetailSheet({
   const canManage = can(companyId, 'activities.manage');
   const [pending, setPending] = useState<ActivityStatus | null>(null);
   const [message, setMessage] = useState('');
-  const [evidenceUrl, setEvidenceUrl] = useState('');
   const [comment, setComment] = useState('');
 
   const q = useQuery({
@@ -104,15 +104,6 @@ export function ActivityDetailSheet({
       toast.success(v.status === 'concluida' ? 'Tarefa concluída! 🎉' : `Status: ${ACTIVITY_STATUS_LABELS[v.status]}`);
       setPending(null);
       setMessage('');
-      refresh();
-    },
-    onError: (err) => toast.error(errorMessage(err)),
-  });
-  const addEvidence = useMutation({
-    mutationFn: () => api.post(`${base}/evidences`, { kind: 'link', url: evidenceUrl.trim() }),
-    onSuccess: () => {
-      toast.success('Evidência registrada');
-      setEvidenceUrl('');
       refresh();
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -260,46 +251,7 @@ export function ActivityDetailSheet({
               )}
 
               <Section title={`Evidências (${a.evidences?.length ?? 0})`}>
-                <ul className="mb-3 flex flex-col gap-2">
-                  {a.evidences?.map((e) => (
-                    <li key={e.id} className="flex items-start gap-2 text-sm">
-                      <Link2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                      <div className="min-w-0">
-                        {e.url ? (
-                          <a href={e.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 break-all text-accent-ink hover:underline">
-                            {e.url} <ExternalLink className="size-3" />
-                          </a>
-                        ) : (
-                          <p>{e.description}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {e.createdByName} · {formatDateTime(e.createdAt)}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                {a.status !== 'cancelada' && (
-                  <form
-                    className="flex gap-2"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (evidenceUrl.trim()) addEvidence.mutate();
-                    }}
-                  >
-                    <Input
-                      type="url"
-                      inputMode="url"
-                      placeholder="Cole o link do Story/post publicado"
-                      value={evidenceUrl}
-                      onChange={(e) => setEvidenceUrl(e.target.value)}
-                      aria-label="Link da evidência"
-                    />
-                    <Button type="submit" variant="secondary" loading={addEvidence.isPending}>
-                      Adicionar
-                    </Button>
-                  </form>
-                )}
+                <EvidenceSection companyId={companyId} activity={a} />
               </Section>
 
               <Section title="Histórico">

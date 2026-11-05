@@ -85,6 +85,11 @@ export interface Evidence {
   id: string;
   kind: 'link' | 'texto' | 'arquivo';
   url: string | null;
+  fileUrl: string | null;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  originalName: string | null;
+  createdBy: string | null;
   description: string;
   createdAt: string;
   createdByName: string | null;

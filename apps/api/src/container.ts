@@ -6,6 +6,20 @@ import { Database } from './db/database';
 import { BullJobQueue, InlineJobQueue, type JobQueue } from './queue';
 import { AiService, createAiProvider } from './services/ai';
 import { MessagingService } from './services/messaging';
+import { randomBytes } from 'node:crypto';
+import { LocalFileStorage, SupabaseFileStorage, type FileStorage } from './storage';
+
+export function createStorage(cfg: Config): FileStorage {
+  const provider = cfg.STORAGE_PROVIDER ?? (cfg.AUTH_PROVIDER === 'supabase' ? 'supabase' : 'local');
+  if (provider === 'supabase') {
+    if (!cfg.SUPABASE_URL || !cfg.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('STORAGE_PROVIDER=supabase exige SUPABASE_URL e SUPABASE_SECRET_KEY');
+    }
+    return new SupabaseFileStorage(cfg.SUPABASE_URL, cfg.SUPABASE_SERVICE_ROLE_KEY, cfg.STORAGE_BUCKET, cfg.UPLOAD_MAX_MB * 1024 * 1024);
+  }
+  // Links locais assinados com o segredo da API (ou um segredo efêmero, válido até reiniciar)
+  return new LocalFileStorage(cfg.STORAGE_LOCAL_DIR, cfg.AUTH_JWT_SECRET ?? randomBytes(32).toString('hex'));
+}
 
 /** Monta as dependências da aplicação a partir da configuração. */
 export function createDeps(cfg: Config, opts: { forceInlineQueue?: boolean; onJobError?: (e: unknown) => void } = {}): AppDeps {
@@ -25,5 +39,5 @@ export function createDeps(cfg: Config, opts: { forceInlineQueue?: boolean; onJo
     inline.setHandlers({ aiGeneration: (id) => ai.runGeneration(id) });
     queue = inline;
   }
-  return { cfg, db, auth: createAuthProvider(cfg, db), ai, messaging, queue };
+  return { cfg, db, auth: createAuthProvider(cfg, db), ai, messaging, queue, storage: createStorage(cfg) };
 }

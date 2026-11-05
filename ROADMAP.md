@@ -29,7 +29,7 @@ Estado atual de cada item: `PROGRESSO.md`.
 | Item | Dependências | Critério |
 |---|---|---|
 | Projeto Supabase de produção + deploy na VPS | Credenciais Supabase, VPS Hostinger, domínio `assistente.favisdesign.com.br` | Migrações aplicadas (serviço `migrate`); HTTPS ativo; login via Supabase Auth em produção |
-| Upload de evidências (imagem/vídeo) | Supabase Storage (bucket privado + políticas) | Arquivo enviado, visível só para a empresa |
+| ✅ Upload de evidências (imagem/vídeo) | Supabase Storage (bucket privado) | Arquivo enviado, visível só para a empresa — **concluído em 05/11/2026** |
 | Chave do provedor de IA e calibração de prompts | Chave API, empresas reais | Planejamentos revisados pela FAVIS com taxa de aceite registrada |
 | Notificações no app (in-app + Web Push no PWA) | VAPID keys | Colaborador recebe lembrete da tarefa do dia |
 | Recuperação de senha e convite por e-mail | SMTP / Supabase Auth | Fluxo completo de convite |

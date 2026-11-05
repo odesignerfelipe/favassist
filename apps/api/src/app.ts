@@ -1,6 +1,7 @@
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
@@ -20,6 +21,7 @@ import type { JobQueue } from './queue';
 import { registerRoutes } from './routes';
 import type { AiService } from './services/ai';
 import type { MessagingService } from './services/messaging';
+import type { FileStorage } from './storage';
 
 export interface AppDeps {
   cfg: Config;
@@ -28,6 +30,7 @@ export interface AppDeps {
   ai: AiService;
   messaging: MessagingService;
   queue: JobQueue;
+  storage: FileStorage;
 }
 
 declare module 'fastify' {
@@ -59,6 +62,9 @@ export async function buildApp(deps: AppDeps, opts: { logger?: boolean } = {}): 
   await app.register(cors, { origin: cfg.APP_URL.split(',').map((s) => s.trim()), credentials: true });
   await app.register(cookie);
   await app.register(rateLimit, { max: 300, timeWindow: '1 minute' });
+  await app.register(multipart, {
+    limits: { fileSize: cfg.UPLOAD_MAX_MB * 1024 * 1024, files: 1, fields: 5, fieldSize: 4096 },
+  });
 
   await app.register(swagger, {
     openapi: {

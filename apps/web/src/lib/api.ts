@@ -146,6 +146,48 @@ export const api = {
   del: <T = void>(path: string) => request<T>('DELETE', path),
 };
 
+/**
+ * Envio de arquivo (multipart) com progresso. Os campos de texto vão ANTES do arquivo
+ * (a API lê os campos que chegam antes do arquivo).
+ */
+export async function upload<T>(
+  path: string,
+  file: File,
+  fields: Record<string, string> = {},
+  onProgress?: (fraction: number) => void,
+): Promise<T> {
+  const send = () =>
+    new Promise<{ status: number; body: unknown }>((resolve, reject) => {
+      const form = new FormData();
+      for (const [k, v] of Object.entries(fields)) form.append(k, v);
+      form.append('file', file, file.name);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${BASE}${path}`);
+      xhr.withCredentials = true;
+      if (accessToken) xhr.setRequestHeader('authorization', `Bearer ${accessToken}`);
+      xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);
+      xhr.onload = () => {
+        let body: unknown = null;
+        try {
+          body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+        } catch {
+          /* resposta não-JSON */
+        }
+        resolve({ status: xhr.status, body });
+      };
+      xhr.onerror = () => reject(new TypeError('Falha de rede'));
+      xhr.send(form);
+    });
+  let res = await send();
+  if (res.status === 401 && (await refreshSession())) res = await send();
+  if (res.status < 200 || res.status >= 300) {
+    const b = (res.body ?? {}) as { error?: string; message?: string };
+    const fallback = res.status === 413 ? 'Arquivo muito grande.' : 'Não foi possível enviar o arquivo.';
+    throw new ApiError(res.status, b.error ?? 'erro', b.message ?? fallback);
+  }
+  return res.body as T;
+}
+
 /** Mensagem amigável para exibir ao usuário. */
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) {

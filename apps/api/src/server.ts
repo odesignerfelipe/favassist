@@ -5,6 +5,13 @@ import { createDeps } from './container';
 const cfg = loadConfig();
 const deps = createDeps(cfg, { onJobError: (err) => console.error('Falha em tarefa em segundo plano:', err) });
 const app = await buildApp(deps);
+try {
+  await deps.storage.ensureReady();
+  app.log.info(`Armazenamento de arquivos: ${deps.storage.name}`);
+} catch (err) {
+  // A aplicação funciona sem uploads; o envio de arquivos falhará com mensagem clara até o armazenamento ficar disponível
+  app.log.error({ err }, 'Armazenamento de arquivos indisponível');
+}
 
 const shutdown = async (signal: string) => {
   app.log.info(`${signal} recebido, encerrando…`);

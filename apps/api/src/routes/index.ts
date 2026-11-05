@@ -5,6 +5,7 @@ import { authRoutes } from './auth';
 import { campaignRoutes } from './campaigns';
 import { companyRoutes } from './companies';
 import { dashboardRoutes } from './dashboard';
+import { fileRoutes } from './files';
 import { memberRoutes } from './members';
 import { platformRoutes } from './platform';
 import { whatsappRoutes } from './whatsapp';
@@ -19,4 +20,5 @@ export const registerRoutes: FastifyPluginAsyncZod = async (app) => {
   await app.register(dashboardRoutes);
   await app.register(aiRoutes);
   await app.register(whatsappRoutes);
+  await app.register(fileRoutes);
 };

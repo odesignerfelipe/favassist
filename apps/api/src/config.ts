@@ -46,6 +46,13 @@ const envSchema = z
     MESSAGING_PROVIDER: z.enum(['simulator']).default('simulator'),
     SIMULATOR_FAILURE_RATE: z.coerce.number().min(0).max(1).default(0),
     MESSAGING_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
+
+    /** local | supabase. Padrão: supabase quando AUTH_PROVIDER=supabase; senão, disco local. */
+    STORAGE_PROVIDER: z.enum(['local', 'supabase']).optional(),
+    STORAGE_BUCKET: z.string().regex(/^[a-z0-9-]{3,63}$/).default('evidencias'),
+    STORAGE_LOCAL_DIR: z.string().default('.data/uploads'),
+    /** Tamanho máximo de cada arquivo enviado (MB). O plano gratuito do Supabase limita a 50 MB. */
+    UPLOAD_MAX_MB: z.coerce.number().int().min(1).max(500).default(50),
   })
   .superRefine((env, ctx) => {
     if (env.AUTH_PROVIDER === 'local' && (!env.AUTH_JWT_SECRET || env.AUTH_JWT_SECRET.length < 32)) {

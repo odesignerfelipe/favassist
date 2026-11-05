@@ -14,7 +14,8 @@
 | Supabase (projeto `mbctlwobwwpgzsusnovg`) | ✅ API compatível com as chaves novas (`sb_publishable_`/`sb_secret_`) e JWKS ES256 — testado contra o projeto real (login e verificação de token). ⏳ Migrações ainda não aplicadas (precisam da string de conexão, digitada na VPS). |
 | Implantação na VPS Hostinger | ✅ **No ar em https://assistente.favisdesign.com.br** (05/11/2026) via serviço Compose do Easypanel (`docker-compose.easypanel.yml`), sem interferir em `gestao.caicosabores.com`. Verificado em produção: página e PWA, `/api/health` (Supabase + Redis/BullMQ), login inválido recusado via Supabase Auth, migrações aplicadas (tabelas existem e o papel `anon` não tem acesso). Lição: no domínio do Easypanel o destino deve ser Protocolo HTTP, porta 80, Serviço Compose `web`. |
 | Domínio | ✅ `assistente.favisdesign.com.br` → A `187.127.63.111` (ALIAS antigo da hospedagem removido); certificado Let's Encrypt emitido pelo Easypanel |
-| Ajustes de segurança no Supabase | ⏳ Verificado em 05/11: cadastro público ainda **habilitado** e Data API ainda **ativa** (o `anon` já é bloqueado pelas permissões, mas usuários logados poderiam escrever direto pela Data API, sem as regras de permissão da API). Pendente: desativar ambos e definir a Site URL. |
+| Evidências em foto e vídeo | ✅ Envio pelo app (com progresso), validação de tipo pelo conteúdo, Supabase Storage em produção (bucket privado `evidencias`, links temporários de 1 h), disco local em dev; remoção apaga o arquivo; pontos de evidência valem para arquivos. Migração 0500. Testado: 10 testes de API + envio real pelo navegador (celular). ⏳ Em produção, validar o primeiro envio após o próximo deploy. |
+| Ajustes de segurança no Supabase | ✅ Cadastro público desligado (05/11). ⏳ Data API ainda **ativa** (o `anon` já é bloqueado pelas permissões, mas usuários logados poderiam escrever direto pela Data API, sem as regras de permissão da API). Pendente: desativar a Data API e definir a Site URL. |
 
 ### Funcionalidades concluídas (com comportamento real e persistência)
 
@@ -39,7 +40,6 @@
 
 ### Parcialmente implementado
 - **IA:** o provedor Anthropic está implementado e com tipos verificados, mas **não foi chamado de verdade** (não há chave de API nesta sessão). O fluxo completo foi testado com um provedor roteirizado de testes.
-- **Evidências:** apenas links e textos. Upload de imagem/vídeo depende do Supabase Storage (Etapa 2).
 - **Gamificação:** ranking de empresas existe na API, sem tela própria ainda.
 
 ### Pendente (próximas etapas — ver ROADMAP.md)
@@ -68,22 +68,23 @@
 | `apps/api` — 17 testes de integração HTTP do Marco 1 | ✅ |
 | `apps/api` — 2 testes de IA (fila → validação → aplicação) e despacho automático do WhatsApp | ✅ |
 | `apps/api` — 3 testes do provedor Supabase (chaves novas/legadas, configuração) | ✅ |
+| `apps/api` — 10 testes de evidências em arquivo (envio, link assinado, adulteração, tipo disfarçado, limites, isolamento, remoção, Supabase Storage simulado) | ✅ |
 | E2E no navegador (`e2e/milestone.e2e.mjs`) — 9 etapas do Marco 1 | ✅ |
 | Build de produção (API tsup, web Vite + PWA) | ✅ |
 | Imagem Docker `api`: migração em banco novo, `/api/health`, worker | ✅ |
 | Imagem Docker `web` + pilha Easypanel completa (E2E pelo nginx) | ✅ |
 
-**Total: 64 testes automatizados + E2E, todos passando.**
+**Total: 74 testes automatizados + E2E, todos passando.**
 
 ### Limitações conhecidas
 - Sem chave de IA, a geração fica desativada (a interface informa claramente). Nenhuma geração é simulada.
 - Sem Redis, a API usa fila inline e o envio diário automático não roda (o envio manual funciona).
 - Bundle inicial da web ~550 kB minificado (aviso do Vite); otimizar a divisão em chunks numa próxima etapa.
-- Fuso horário das datas na interface usa o relógio do navegador; os prazos no banco usam o fuso da empresa.
+- Fuso horário das datas na interface usa o relógio do navegador; os prazos no banco usam o fuso da empresa (diferença só aparece para usuários fora do Brasil ou perto da meia-noite; o E2E roda com o navegador no fuso de São Paulo).
 
 ## Continuidade
 
-- **Última tarefa realizada:** primeira implantação em produção (Easypanel + Supabase) concluída e verificada.
+- **Última tarefa realizada:** evidências em foto e vídeo (Supabase Storage) — aguardando deploy em produção.
 - **Próximo passo recomendado:** confirmar os ajustes de segurança do Supabase e o primeiro login do administrador; mesclar `feat/primeira-entrega` no `main` (e apontar o Easypanel para `main`); depois, chave da IA + calibração de prompts com clientes reais, upload de evidências (Supabase Storage) e notificações no app.
 - **Para retomar:**
 
