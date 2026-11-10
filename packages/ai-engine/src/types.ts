@@ -72,6 +72,13 @@ export interface ProviderUsage {
   inputTokens?: number;
   outputTokens?: number;
   cacheReadInputTokens?: number;
+  cacheWriteInputTokens?: number;
+  /** Modelo que efetivamente atendeu (pode ser o fallback do servidor). */
+  model?: string;
+  /** Custo estimado em US$ pela tabela pública de preços (ver pricing.ts). */
+  costUsd?: number;
+  /** false = modelo fora da tabela; custo estimado pelo maior preço conhecido. */
+  priceKnown?: boolean;
 }
 
 /** Contrato de provedor de IA. Novos provedores implementam esta interface. */
@@ -88,6 +95,8 @@ export class AIProviderError extends Error {
     message: string,
     readonly kind: 'refusal' | 'truncated' | 'rate_limit' | 'auth' | 'timeout' | 'invalid_output' | 'unavailable',
     readonly retryable: boolean,
+    /** Consumo das chamadas que já foram cobradas antes do erro (ex.: recusa, resposta inválida). */
+    public usage: ProviderUsage[] = [],
   ) {
     super(message);
   }

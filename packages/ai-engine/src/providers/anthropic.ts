@@ -7,6 +7,7 @@ import {
   type GenerateTextRequest,
   type ProviderUsage,
 } from '../types';
+import { estimateCostUsd } from '../pricing';
 
 export const ANTHROPIC_DEFAULT_MODEL = 'claude-opus-5-5';
 
@@ -53,15 +54,15 @@ export class AnthropicProvider implements AIProvider {
         ...this.fallbackParams(),
       });
       const message = await stream.finalMessage();
-      this.assertCompleted(message.stop_reason, message.stop_details);
+      this.assertCompleted(message);
       const text = message.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
       let data: unknown;
       try {
         data = JSON.parse(text);
       } catch {
-        throw new AIProviderError('A resposta da IA não é um JSON válido', 'invalid_output', true);
+        throw new AIProviderError('A resposta da IA não é um JSON válido', 'invalid_output', true, [toUsage(message)]);
       }
-      return { data, usage: toUsage(message.usage), model: message.model };
+      return { data, usage: toUsage(message), model: message.model };
     } catch (err) {
       throw mapError(err);
     }
@@ -77,34 +78,78 @@ export class AnthropicProvider implements AIProvider {
         messages: [{ role: 'user', content: req.user }],
         ...this.fallbackParams(),
       });
-      this.assertCompleted(message.stop_reason, message.stop_details);
+      this.assertCompleted(message);
       const text = message.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
-      return { text, usage: toUsage(message.usage), model: message.model };
+      return { text, usage: toUsage(message), model: message.model };
     } catch (err) {
       throw mapError(err);
     }
   }
 
-  private assertCompleted(stopReason: string | null, stopDetails: unknown) {
-    if (stopReason === 'refusal') {
-      const category = (stopDetails as { category?: string } | null)?.category ?? 'não informada';
-      throw new AIProviderError(`A IA recusou a solicitação (categoria: ${category})`, 'refusal', false);
+  /** Recusa ou corte por tamanho: a chamada foi cobrada, então o erro leva o consumo junto. */
+  private assertCompleted(message: Anthropic.Beta.BetaMessage) {
+    if (message.stop_reason === 'refusal') {
+      const category = (message.stop_details as { category?: string } | null)?.category ?? 'não informada';
+      throw new AIProviderError(`A IA recusou a solicitação (categoria: ${category})`, 'refusal', false, [toUsage(message)]);
     }
-    if (stopReason === 'max_tokens') {
-      throw new AIProviderError('A resposta da IA foi interrompida por limite de tamanho', 'truncated', true);
+    if (message.stop_reason === 'max_tokens') {
+      throw new AIProviderError('A resposta da IA foi interrompida por limite de tamanho', 'truncated', true, [
+        toUsage(message),
+      ]);
     }
   }
 }
 
-function toUsage(u: {
-  input_tokens: number;
-  output_tokens: number;
-  cache_read_input_tokens?: number | null;
-}): ProviderUsage {
+/**
+ * Tokens e custo estimado de uma resposta. Com fallback do servidor, cada iteração em
+ * `usage.iterations` traz o modelo que a executou (a recusa é cobrada no modelo original e o
+ * resgate no modelo de fallback) — o custo é somado iteração a iteração.
+ */
+export function toUsage(message: Pick<Anthropic.Beta.BetaMessage, 'model' | 'usage'>): ProviderUsage {
+  const u = message.usage;
+  const parts =
+    u.iterations && u.iterations.length
+      ? u.iterations.map((it) => ({
+          model: ('model' in it && it.model) || message.model,
+          input: it.input_tokens ?? 0,
+          output: it.output_tokens ?? 0,
+          cacheRead: it.cache_read_input_tokens ?? 0,
+          cacheWrite: it.cache_creation_input_tokens ?? 0,
+          cacheCreation: it.cache_creation,
+        }))
+      : [
+          {
+            model: message.model,
+            input: u.input_tokens ?? 0,
+            output: u.output_tokens ?? 0,
+            cacheRead: u.cache_read_input_tokens ?? 0,
+            cacheWrite: u.cache_creation_input_tokens ?? 0,
+            cacheCreation: u.cache_creation,
+          },
+        ];
+  let costUsd = 0;
+  let priceKnown = true;
+  for (const p of parts) {
+    const write1h = p.cacheCreation?.ephemeral_1h_input_tokens ?? 0;
+    const est = estimateCostUsd(p.model, {
+      inputTokens: p.input,
+      outputTokens: p.output,
+      cacheReadInputTokens: p.cacheRead,
+      cacheWrite5mInputTokens: Math.max(0, p.cacheWrite - write1h),
+      cacheWrite1hInputTokens: write1h,
+    });
+    costUsd += est.costUsd;
+    priceKnown &&= est.priceKnown;
+  }
+  const sum = (k: 'input' | 'output' | 'cacheRead' | 'cacheWrite') => parts.reduce((s, p) => s + p[k], 0);
   return {
-    inputTokens: u.input_tokens,
-    outputTokens: u.output_tokens,
-    cacheReadInputTokens: u.cache_read_input_tokens ?? undefined,
+    model: message.model,
+    inputTokens: sum('input'),
+    outputTokens: sum('output'),
+    cacheReadInputTokens: sum('cacheRead'),
+    cacheWriteInputTokens: sum('cacheWrite'),
+    costUsd: Math.round(costUsd * 1e6) / 1e6,
+    priceKnown,
   };
 }
 

@@ -52,7 +52,9 @@ export const platformRoutes: FastifyPluginAsyncZod = async (app) => {
           tx,
           `update platform_settings
               set ai_enabled = $1, ai_default_campaign_mix = $2, ai_history_days = $3, ai_guidelines = $4,
-                  messaging_enabled = $5, messaging_default_send_time = $6, updated_by = $7
+                  messaging_enabled = $5, messaging_default_send_time = $6, updated_by = $7,
+                  ai_default_monthly_budget_usd = coalesce($8, ai_default_monthly_budget_usd),
+                  ai_budget_alert_pct = coalesce($9, ai_budget_alert_pct)
             where id = 1 returning *`,
           [
             b.aiEnabled,
@@ -62,6 +64,8 @@ export const platformRoutes: FastifyPluginAsyncZod = async (app) => {
             b.messagingEnabled,
             b.messagingDefaultSendTime,
             userId,
+            b.aiDefaultMonthlyBudgetUsd ?? null,
+            b.aiBudgetAlertPct ?? null,
           ],
         ),
       );

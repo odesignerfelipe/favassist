@@ -163,6 +163,19 @@ API (rota /ai/plans) ─▶ cria ai_generations(status=pendente) ─▶ fila "ai
 - Sem provedor configurado, a interface informa claramente que a IA está desativada — não há geração simulada.
 - Tendências: só entram no contexto quando houver fonte verificável integrada (ainda não há; o prompt proíbe inventar).
 
+### 7.1 Controle de consumo por empresa (migração 0700)
+
+- Cada chamada ao provedor gera uma linha em `ai_usage_events`: empresa, funcionalidade (`planejamento`, `alternativa`, `assistente_whatsapp`), origem (`manual` | `automatico`), modelo, tokens e **custo estimado**. As tentativas que falharam mas foram cobradas também entram: recusa, resposta inválida ou corte por tamanho (`AIProviderError.usage`).
+- O custo é calculado em `packages/ai-engine/src/pricing.ts` pela tabela pública de preços. Com *fallback* do servidor, a conta é feita iteração a iteração (`usage.iterations`): a recusa é cobrada no modelo original e o resgate no modelo de fallback. Um modelo fora da tabela é estimado pelo maior preço conhecido (`price_known = false`).
+- O teto mensal de referência é `companies.ai_monthly_budget_usd` ou o padrão `platform_settings.ai_default_monthly_budget_usd` (US$ 10). O alerta dispara em `ai_budget_alerts` ao atingir `ai_budget_alert_pct` (80%) e, de novo, ao atingir o teto, uma vez por mês e nível. O mês segue o fuso da empresa.
+- Ao atingir o teto, as chamadas **automáticas** (`ai_generations.origin = 'automatico'` e as respostas do assistente do WhatsApp) não chamam a IA. O assistente responde com a mensagem padrão. As chamadas **manuais** continuam, com aviso na tela de IA. Teto 0 desliga as automações de IA da empresa.
+- O teto é uma referência interna do FAV Assist: **não altera limites da conta na Anthropic**. A cobrança oficial continua sendo a do console da Anthropic.
+- Telas:
+  - *Admin → Consumo de IA* (`/admin/ia`): consumo por empresa, alertas e edição do teto;
+  - *Admin → Configurações*: teto padrão e percentual do alerta;
+  - tela de IA da empresa: aviso de alerta ou de teto atingido.
+- RLS: o consumo é lido só por administradores FAVIS e gestores da empresa (`app.can_manage_company`). Só o sistema grava.
+
 ## 8. Notificações e WhatsApp
 
 ```

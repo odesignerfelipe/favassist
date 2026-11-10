@@ -1,4 +1,4 @@
-import { generateAssistantReply, type AIProvider } from '@fav/ai-engine';
+import { AIProviderError, generateAssistantReply, type AIProvider } from '@fav/ai-engine';
 import {
   composeDailySchedule,
   composeRuleReply,
@@ -9,6 +9,7 @@ import {
 } from '@fav/messaging';
 import { many, one, type Database, type Tx } from '../db/database';
 import { unprocessable } from '../lib/errors';
+import type { AiBudget } from './ai-budget';
 
 interface GroupRow {
   id: string;
@@ -35,7 +36,7 @@ export class MessagingService {
   constructor(
     private readonly db: Database,
     private readonly provider: MessagingProvider,
-    private readonly opts: { appUrl: string; maxAttempts: number; ai: AIProvider | null },
+    private readonly opts: { appUrl: string; maxAttempts: number; ai: AIProvider | null; aiBudget?: AiBudget | null },
   ) {}
 
   get providerName() {
@@ -215,16 +216,29 @@ export class MessagingService {
       appUrl: this.opts.appUrl,
       todaySchedule,
     });
-    if (!reply && this.opts.ai) {
+    // Resposta por IA é uma chamada AUTOMÁTICA: respeita o teto mensal da empresa
+    const budget = this.opts.aiBudget;
+    if (!reply && this.opts.ai && (!budget || (await budget.allowAutomatic(group.companyId)).allowed)) {
+      const ai = this.opts.ai;
+      const base = {
+        companyId: group.companyId,
+        feature: 'assistente_whatsapp' as const,
+        origin: 'automatico' as const,
+        provider: ai.name,
+        model: ai.model,
+      };
       try {
-        reply = await generateAssistantReply(this.opts.ai, {
+        const res = await generateAssistantReply(ai, {
           companyName: group.companyName,
           toneOfVoice: group.toneOfVoice,
           scheduleSummary: ctx.items.map((i) => `- ${i.time ?? ''} ${i.title}`).join('\n'),
           message: text,
           senderName,
         });
-      } catch {
+        reply = res.text || null;
+        await budget?.record({ ...base, succeeded: true, usage: res.usage });
+      } catch (err) {
+        if (err instanceof AIProviderError) await budget?.record({ ...base, succeeded: false, usage: err.usage }).catch(() => {});
         reply = null;
       }
     }

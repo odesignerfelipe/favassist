@@ -29,7 +29,12 @@ export default function SettingsPage() {
   const q = useQuery({ queryKey: ['admin-settings'], queryFn: () => api.get<SettingsResponse>('/admin/settings') });
   const [s, setS] = useState<PlatformSettings | null>(null);
   useEffect(() => {
-    if (q.data) setS({ ...q.data.settings, aiDefaultCampaignMix: Number(q.data.settings.aiDefaultCampaignMix) });
+    if (q.data)
+      setS({
+        ...q.data.settings,
+        aiDefaultCampaignMix: Number(q.data.settings.aiDefaultCampaignMix),
+        aiDefaultMonthlyBudgetUsd: Number(q.data.settings.aiDefaultMonthlyBudgetUsd),
+      });
   }, [q.data]);
   const save = useMutation({
     mutationFn: () =>
@@ -40,6 +45,8 @@ export default function SettingsPage() {
         aiGuidelines: s!.aiGuidelines,
         messagingEnabled: s!.messagingEnabled,
         messagingDefaultSendTime: s!.messagingDefaultSendTime,
+        aiDefaultMonthlyBudgetUsd: s!.aiDefaultMonthlyBudgetUsd,
+        aiBudgetAlertPct: s!.aiBudgetAlertPct,
       }),
     onSuccess: () => {
       toast.success('Configurações salvas');
@@ -73,6 +80,31 @@ export default function SettingsPage() {
               </Field>
               <Field label="Diretrizes da FAVIS para a IA" htmlFor="guidelines" className="sm:col-span-2" hint="Ex.: priorizar conteúdos gravados pelo próprio dono; linguagem sem jargões">
                 <Textarea rows={5} maxLength={4000} value={s.aiGuidelines} onChange={(e) => setS({ ...s, aiGuidelines: e.target.value })} />
+              </Field>
+              <Field
+                label="Teto mensal de referência por empresa (US$)"
+                htmlFor="budget"
+                hint="Ao atingir, as chamadas automáticas de IA da empresa param; as manuais seguem com aviso. Não altera limites da conta Anthropic."
+              >
+                <Input
+                  id="budget"
+                  type="number"
+                  min={0}
+                  max={10000}
+                  step={0.5}
+                  value={s.aiDefaultMonthlyBudgetUsd}
+                  onChange={(e) => setS({ ...s, aiDefaultMonthlyBudgetUsd: Number(e.target.value) })}
+                />
+              </Field>
+              <Field label="Alertar ao atingir (% do teto)" htmlFor="alertpct">
+                <Input
+                  id="alertpct"
+                  type="number"
+                  min={10}
+                  max={99}
+                  value={s.aiBudgetAlertPct}
+                  onChange={(e) => setS({ ...s, aiBudgetAlertPct: Number(e.target.value) })}
+                />
               </Field>
             </CardContent>
           </Card>

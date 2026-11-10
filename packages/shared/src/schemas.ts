@@ -284,6 +284,14 @@ export const platformSettingsSchema = z.object({
   aiGuidelines: text(4000),
   messagingEnabled: z.boolean(),
   messagingDefaultSendTime: timeHHMM,
+  /** Teto mensal de referência de IA por empresa (US$); opcional para manter clientes antigos. */
+  aiDefaultMonthlyBudgetUsd: z.number().min(0).max(10_000).optional(),
+  aiBudgetAlertPct: z.number().int().min(10).max(99).optional(),
+});
+
+/** Teto mensal de IA de uma empresa. null = usar o padrão da plataforma. */
+export const aiBudgetUpdateSchema = z.object({
+  monthlyBudgetUsd: z.number().min(0, 'Use 0 ou mais').max(10_000, 'Máximo de US$ 10.000').nullable(),
 });
 
 // ---------- WhatsApp ----------

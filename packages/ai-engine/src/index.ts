@@ -3,4 +3,5 @@ export * from './schema';
 export * from './prompt';
 export * from './guardrails';
 export * from './engine';
-export { AnthropicProvider, ANTHROPIC_DEFAULT_MODEL } from './providers/anthropic';
+export * from './pricing';
+export { AnthropicProvider, ANTHROPIC_DEFAULT_MODEL, toUsage } from './providers/anthropic';

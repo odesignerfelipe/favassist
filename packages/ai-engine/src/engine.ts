@@ -28,12 +28,19 @@ export async function generatePlan(
   let lastError = '';
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const res = await provider.generateJson({
-      system: PLANNER_SYSTEM_PROMPT,
-      user,
-      schema: planOutputSchema,
-      maxTokens: opts.maxTokens,
-    });
+    let res: Awaited<ReturnType<AIProvider['generateJson']>>;
+    try {
+      res = await provider.generateJson({
+        system: PLANNER_SYSTEM_PROMPT,
+        user,
+        schema: planOutputSchema,
+        maxTokens: opts.maxTokens,
+      });
+    } catch (err) {
+      // Tentativas anteriores já foram cobradas: o erro carrega todo o consumo
+      if (err instanceof AIProviderError) err.usage = [...usage, ...err.usage];
+      throw err;
+    }
     if (res.usage) usage.push(res.usage);
     const parsed = planOutputSchema.safeParse(res.data);
     if (parsed.success) {
@@ -52,14 +59,14 @@ export async function generatePlan(
       .join('; ');
     user = `${buildPlanUserPrompt(ctx)}\n\n# Correção\nA resposta anterior não seguiu o formato: ${lastError}. Responda novamente com o JSON completo e válido.`;
   }
-  throw new AIProviderError(`A IA não retornou um planejamento válido: ${lastError}`, 'invalid_output', true);
+  throw new AIProviderError(`A IA não retornou um planejamento válido: ${lastError}`, 'invalid_output', true, usage);
 }
 
 /** Resposta curta para mensagens recebidas (ex.: WhatsApp). */
 export async function generateAssistantReply(
   provider: AIProvider,
   input: { companyName: string; toneOfVoice: string; scheduleSummary: string; message: string; senderName: string },
-): Promise<string> {
+): Promise<{ text: string; usage: ProviderUsage[] }> {
   const res = await provider.generateText({
     system: ASSISTANT_SYSTEM_PROMPT,
     user:
@@ -68,7 +75,7 @@ export async function generateAssistantReply(
       `Mensagem de ${input.senderName}: ${input.message}`,
     maxTokens: 1024,
   });
-  return res.text.trim();
+  return { text: res.text.trim(), usage: res.usage ? [res.usage] : [] };
 }
 
 function summarizeContext(ctx: CompanyContext): Record<string, unknown> {

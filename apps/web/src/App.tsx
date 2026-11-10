@@ -12,6 +12,7 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const WhatsappMonitorPage = lazy(() => import('./pages/admin/WhatsappMonitorPage'));
 const AuditPage = lazy(() => import('./pages/admin/AuditPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+const AiUsagePage = lazy(() => import('./pages/admin/AiUsagePage'));
 const CompanyLayout = lazy(() => import('./pages/company/CompanyLayout'));
 const OverviewPage = lazy(() => import('./pages/company/OverviewPage'));
 const CalendarPage = lazy(() => import('./pages/company/CalendarPage'));
@@ -86,6 +87,7 @@ export function App() {
                 <Route path="admin/usuarios" element={<RequireAdmin><UsersPage /></RequireAdmin>} />
                 <Route path="admin/whatsapp" element={<RequireAdmin><WhatsappMonitorPage /></RequireAdmin>} />
                 <Route path="admin/auditoria" element={<RequireAdmin><AuditPage /></RequireAdmin>} />
+                <Route path="admin/ia" element={<RequireAdmin><AiUsagePage /></RequireAdmin>} />
                 <Route path="admin/configuracoes" element={<RequireAdmin><SettingsPage /></RequireAdmin>} />
                 <Route path="empresas/:companyId" element={<RequireCompany><CompanyLayout /></RequireCompany>}>
                   <Route index element={<OverviewPage />} />

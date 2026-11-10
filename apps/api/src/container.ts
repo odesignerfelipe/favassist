@@ -5,6 +5,7 @@ import type { Config } from './config';
 import { Database } from './db/database';
 import { BullJobQueue, InlineJobQueue, type JobQueue } from './queue';
 import { AiService, createAiProvider } from './services/ai';
+import { AiBudget } from './services/ai-budget';
 import { MessagingService } from './services/messaging';
 import { randomBytes } from 'node:crypto';
 import { LocalFileStorage, SupabaseFileStorage, type FileStorage } from './storage';
@@ -25,11 +26,12 @@ export function createStorage(cfg: Config): FileStorage {
 export function createDeps(cfg: Config, opts: { forceInlineQueue?: boolean; onJobError?: (e: unknown) => void } = {}): AppDeps {
   const db = new Database(cfg.DATABASE_URL, { ssl: cfg.DATABASE_SSL });
   const aiProvider = createAiProvider(cfg);
-  const ai = new AiService(db, aiProvider);
+  const aiBudget = new AiBudget(db, (msg, data) => console.warn(JSON.stringify({ level: 'warn', msg, ...data })));
+  const ai = new AiService(db, aiProvider, aiBudget);
   const messaging = new MessagingService(
     db,
     createMessagingProvider(cfg.MESSAGING_PROVIDER, { failureRate: cfg.SIMULATOR_FAILURE_RATE }),
-    { appUrl: cfg.APP_URL.split(',')[0]!.trim(), maxAttempts: cfg.MESSAGING_MAX_ATTEMPTS, ai: aiProvider },
+    { appUrl: cfg.APP_URL.split(',')[0]!.trim(), maxAttempts: cfg.MESSAGING_MAX_ATTEMPTS, ai: aiProvider, aiBudget },
   );
   let queue: JobQueue;
   if (cfg.REDIS_URL && !opts.forceInlineQueue) {

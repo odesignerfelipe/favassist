@@ -57,3 +57,13 @@ export function pct(value: number | null | undefined) {
 export function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
 }
+
+/** Valor em dólares (custos de IA). Valores muito pequenos ganham 4 casas. */
+export function formatUsd(v: number): string {
+  return v.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: v > 0 && v < 0.01 ? 4 : 2,
+  });
+}
