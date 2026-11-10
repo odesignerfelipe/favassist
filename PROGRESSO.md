@@ -19,6 +19,7 @@
 | Fila de aprovações | ✅ Quadro "Aguardando aprovação" na visão geral da empresa (aprovar uma a uma ou todas), essencial para revisar os planejamentos da IA. Testado no navegador. |
 | Implantação automática | ✅ Workflow `deploy.yml`: após o CI verde no `main`, aciona o gatilho do Easypanel (segredo `EASYPANEL_DEPLOY_URL`). ⏳ Segredo a cadastrar no GitHub. |
 | Ajustes de segurança no Supabase | ✅ Concluídos em 05/11/2026: cadastro público desligado, Data API desativada (verificado: o endpoint REST não serve mais tabelas) e Site URL `https://assistente.favisdesign.com.br`. |
+| Controle de consumo de IA por empresa (2.0) | 🔧 Branch `feat/controle-custo-ia` (aguardando aprovação; migração 0700 **não aplicada em produção**). Teto de referência US$ 10/mês por empresa (ajustável no painel), alerta em 80%, bloqueio das chamadas **automáticas** no teto (manuais seguem com aviso), custo estimado por chamada pela tabela pública de preços (inclui fallback e tentativas que falharam), painel *Admin → Consumo de IA*. Não altera limites da conta Anthropic. 14 testes novos (9 API + 5 motor) + E2E. |
 
 ### Funcionalidades concluídas (com comportamento real e persistência)
 
@@ -77,7 +78,7 @@
 | Imagem Docker `api`: migração em banco novo, `/api/health`, worker | ✅ |
 | Imagem Docker `web` + pilha Easypanel completa (E2E pelo nginx) | ✅ |
 
-**Total: 74 testes automatizados + E2E, todos passando.**
+**Total: 74 testes automatizados + E2E, todos passando** (no `main`; o branch do controle de custo soma 88).
 
 ### Limitações conhecidas
 - Sem chave de IA, a geração fica desativada (a interface informa claramente). Nenhuma geração é simulada.

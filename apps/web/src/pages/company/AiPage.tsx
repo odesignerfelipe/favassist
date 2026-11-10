@@ -11,8 +11,8 @@ import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Check
 import { Field, Input, Select, Textarea } from '@/components/ui/form';
 import { Dialog, DialogBody, DialogContent, DialogFooter } from '@/components/ui/overlay';
 import { api, errorMessage } from '@/lib/api';
-import type { AiGeneration, AiGenerationSummary } from '@/lib/types';
-import { formatDate, formatDateTime, shiftISO, toISODate } from '@/lib/utils';
+import type { AiBudgetStatus, AiGeneration, AiGenerationSummary } from '@/lib/types';
+import { formatDate, formatDateTime, formatUsd, shiftISO, toISODate } from '@/lib/utils';
 import { useCompanyId } from './CompanyLayout';
 
 interface AiStatus {
@@ -157,6 +157,28 @@ function ReviewDialog({ companyId, generationId, onClose }: { companyId: string;
   );
 }
 
+/** Consumo do mês: aviso no alerta e no teto (chamadas automáticas pausadas; manuais seguem). */
+function BudgetNotice({ b }: { b: AiBudgetStatus }) {
+  const amount = `${formatUsd(b.spentUsd)} de ${formatUsd(b.budgetUsd)}`;
+  if (b.level === 'ok') {
+    return <p className="text-xs text-muted-foreground">Consumo estimado de IA no mês: {amount} (teto de referência).</p>;
+  }
+  const limit = b.level === 'limite';
+  return (
+    <div className={limit ? 'rounded-lg border border-danger/30 bg-danger-soft p-3 text-sm' : 'rounded-lg border border-warning/30 bg-warning-soft p-3 text-sm'}>
+      <p className={limit ? 'font-medium text-danger' : 'font-medium text-warning'}>
+        {limit ? 'Teto mensal de IA atingido' : `Consumo de IA em ${Math.round(b.usedPct)}% do teto mensal`}
+      </p>
+      <p className="mt-0.5">
+        {amount} estimados neste mês.{' '}
+        {limit
+          ? 'As automações de IA desta empresa estão pausadas até o próximo mês. Pedidos manuais ainda funcionam, mas ultrapassam a referência — combine com a FAVIS antes de usar.'
+          : 'Ao atingir o teto, as automações de IA desta empresa são pausadas.'}
+      </p>
+    </div>
+  );
+}
+
 export default function AiPage() {
   const companyId = useCompanyId();
   const qc = useQueryClient();
@@ -166,6 +188,11 @@ export default function AiPage() {
   const [reviewing, setReviewing] = useState<string | null>(null);
 
   const status = useQuery({ queryKey: ['ai-status'], queryFn: () => api.get<AiStatus>('/ai/status') });
+  const budget = useQuery({
+    queryKey: ['ai-budget', companyId],
+    queryFn: () => api.get<AiBudgetStatus>(`/companies/${companyId}/ai/budget`),
+    retry: false,
+  });
   const gens = useQuery({
     queryKey: ['ai-generations', companyId],
     queryFn: () => api.get<AiGenerationSummary[]>(`/companies/${companyId}/ai/generations`),
@@ -179,6 +206,7 @@ export default function AiPage() {
       toast.success('Pedido enviado. O planejamento aparecerá abaixo quando estiver pronto.');
       setInstructions('');
       void qc.invalidateQueries({ queryKey: ['ai-generations', companyId] });
+      void qc.invalidateQueries({ queryKey: ['ai-budget', companyId] });
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -207,6 +235,7 @@ export default function AiPage() {
               </p>
             </div>
           )}
+          {budget.data && <BudgetNotice b={budget.data} />}
           <Segmented
             label="Tipo"
             value={kind}

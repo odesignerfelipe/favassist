@@ -1,4 +1,5 @@
 import {
+  Bot,
   Building2,
   ChevronsUpDown,
   ClipboardCheck,
@@ -47,6 +48,7 @@ function useNavSections() {
         { to: '/admin/empresas', label: 'Empresas', icon: Building2 },
         { to: '/admin/usuarios', label: 'Usuários', icon: Users },
         { to: '/admin/whatsapp', label: 'WhatsApp', icon: MessageSquare },
+        { to: '/admin/ia', label: 'Consumo de IA', icon: Bot },
         { to: '/admin/auditoria', label: 'Auditoria', icon: ScrollText },
         { to: '/admin/configuracoes', label: 'Configurações', icon: Settings },
       ],

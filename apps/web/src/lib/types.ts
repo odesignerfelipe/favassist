@@ -314,5 +314,41 @@ export interface PlatformSettings {
   aiGuidelines: string;
   messagingEnabled: boolean;
   messagingDefaultSendTime: string;
+  aiDefaultMonthlyBudgetUsd: number;
+  aiBudgetAlertPct: number;
   updatedAt: string;
+}
+
+export type AiBudgetLevel = 'ok' | 'alerta' | 'limite';
+
+export interface AiBudgetStatus {
+  month: string;
+  spentUsd: number;
+  budgetUsd: number;
+  customBudget: boolean;
+  alertPct: number;
+  usedPct: number;
+  level: AiBudgetLevel;
+  automaticBlocked: boolean;
+  note?: string;
+}
+
+export interface AiUsageCompany extends AiBudgetStatus {
+  companyId: string;
+  companyName: string;
+  calls: number;
+  failedCalls: number;
+  automaticCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+  unknownPrice: number;
+}
+
+export interface AiUsageOverview {
+  companies: AiUsageCompany[];
+  alerts: { companyId: string; companyName: string; month: string; level: AiBudgetLevel; spentUsd: number; budgetUsd: number; createdAt: string }[];
+  totals: { spentUsd: number; calls: number; companiesAtLimit: number; companiesOnAlert: number };
+  defaults: { aiDefaultMonthlyBudgetUsd: number; aiBudgetAlertPct: number };
+  priceTableDate: string;
+  note: string;
 }

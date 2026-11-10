@@ -1,6 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { activityRoutes } from './activities';
 import { aiRoutes } from './ai';
+import { aiUsageRoutes } from './ai-usage';
 import { authRoutes } from './auth';
 import { campaignRoutes } from './campaigns';
 import { companyRoutes } from './companies';
@@ -19,6 +20,7 @@ export const registerRoutes: FastifyPluginAsyncZod = async (app) => {
   await app.register(activityRoutes);
   await app.register(dashboardRoutes);
   await app.register(aiRoutes);
+  await app.register(aiUsageRoutes);
   await app.register(whatsappRoutes);
   await app.register(fileRoutes);
 };

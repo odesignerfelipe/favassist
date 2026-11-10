@@ -8,6 +8,7 @@ import {
 } from '@fav/ai-engine';
 import type { Config } from '../config';
 import { many, one, type Database, type Tx } from '../db/database';
+import type { AiBudget } from './ai-budget';
 
 export interface AiStatus {
   configured: boolean;
@@ -31,6 +32,7 @@ interface GenerationRow {
   instructions: string;
   sourceActivityId: string | null;
   status: string;
+  origin: 'manual' | 'automatico';
 }
 
 /** Orquestra o motor de IA com os dados do banco (memória estratégica por empresa). */
@@ -38,6 +40,7 @@ export class AiService {
   constructor(
     private readonly db: Database,
     private readonly provider: AIProvider | null,
+    readonly budget: AiBudget | null = null,
   ) {}
 
   status(): AiStatus {
@@ -132,7 +135,7 @@ export class AiService {
         tx,
         `update ai_generations set status = 'processando', started_at = now(), error = null
           where id = $1 and status in ('pendente', 'falhou')
-          returning id, company_id, kind, period_start::text, period_end::text, instructions, source_activity_id, status`,
+          returning id, company_id, kind, period_start::text, period_end::text, instructions, source_activity_id, status, origin`,
         [generationId],
       );
       if (!gen) return null;
@@ -145,10 +148,27 @@ export class AiService {
       await this.fail(gen.id, 'Nenhum provedor de IA configurado (AI_PROVIDER=none)');
       return;
     }
+    // Teto mensal atingido: gerações automáticas não chamam a IA (as manuais seguem, com aviso na tela)
+    if (gen.origin === 'automatico' && this.budget) {
+      const { allowed } = await this.budget.allowAutomatic(gen.companyId);
+      if (!allowed) {
+        await this.fail(gen.id, 'Limite mensal de IA da empresa atingido: geração automática não executada.');
+        return;
+      }
+    }
+    const usageBase = {
+      companyId: gen.companyId,
+      generationId: gen.id,
+      feature: gen.kind === 'alternativa' ? ('alternativa' as const) : ('planejamento' as const),
+      origin: gen.origin,
+      provider: this.provider.name,
+      model: this.provider.model,
+    };
     try {
       const result = await generatePlan(this.provider, ctx, {
         maxTokens: gen.kind === 'plano_mensal' ? 96_000 : 48_000,
       });
+      await this.budget?.record({ ...usageBase, succeeded: true, usage: result.usage });
       await this.db.asService((tx) =>
         tx.query(
           `update ai_generations
@@ -167,6 +187,7 @@ export class AiService {
         ),
       );
     } catch (err) {
+      if (err instanceof AIProviderError) await this.budget?.record({ ...usageBase, succeeded: false, usage: err.usage });
       const message = err instanceof AIProviderError ? err.message : 'Erro inesperado ao gerar o planejamento';
       await this.fail(gen.id, message);
       if (err instanceof AIProviderError && err.retryable) throw err; // BullMQ tenta novamente

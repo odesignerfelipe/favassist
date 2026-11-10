@@ -8,6 +8,7 @@ import { Database } from '../src/db/database';
 import { migrate } from '../src/db/migrate';
 import { InlineJobQueue } from '../src/queue';
 import { AiService } from '../src/services/ai';
+import { AiBudget } from '../src/services/ai-budget';
 import { MessagingService } from '../src/services/messaging';
 import { LocalFileStorage } from '../src/storage';
 import { mkdtempSync } from 'node:fs';
@@ -42,12 +43,14 @@ export async function createTestApp(
   const cfg = testConfig(opts.env);
   if (opts.reset !== false) await migrate(cfg.DATABASE_URL, { localAuth: true, reset: true });
   const db = new Database(cfg.DATABASE_URL, { max: 5 });
-  const ai = new AiService(db, opts.aiProvider ?? null);
+  const aiBudget = new AiBudget(db);
+  const ai = new AiService(db, opts.aiProvider ?? null, aiBudget);
   const simulator = new SimulatorProvider();
   const messaging = new MessagingService(db, simulator, {
     appUrl: cfg.APP_URL,
     maxAttempts: 3,
     ai: opts.aiProvider ?? null,
+    aiBudget,
   });
   const queue = new InlineJobQueue((e) => console.error(e));
   queue.setHandlers({ aiGeneration: (id) => ai.runGeneration(id) });
